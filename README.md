@@ -45,11 +45,18 @@ ExperimentOS는 **실험 운영의 표준(Health Check → Result → Decision M
 4) **Guardrail 비교**
 - 선택한 guardrail 컬럼(control vs treatment) 비교
 - 악화(worsened) 배지 표시 (임계치/유의성 규칙 기반)
+- **New**: 심각한 악화(Severe) 기준 적용 (Δ > 0.3%p)
 
 5) **Decision Memo 1pager 자동 생성 + Export**
 - 결론: Launch/Hold/Rollback (룰 기반)
 - 근거/리스크/Next Actions 포함
+- **New**: 실험 가정(Assumptions) 및 임계치(Thresholds) 자동 명시
 - Markdown/HTML 다운로드
+
+6) **UX & Safety (New)**
+- **Navigation Guards**: 데이터 없이 결과 페이지 진입 시 차단 및 안내
+- **Status Banners**: 데이터 품질 문제(Blocked/Warning) 상단 배너 표시
+- **Config Centralization**: 모든 임계치를 `config.py`에서 통합 관리
 
 ---
 
@@ -136,6 +143,24 @@ treatment,10050,1320,118,33
 
 ---
 
+## Configuration (New)
+
+`src/experimentos/config.py`에서 실험의 모든 주요 설정을 관리합니다.
+
+```python
+# 기본 설정값 (PRD v1.0 기준)
+SRM_WARNING_THRESHOLD = 0.001       # p < 0.001 → Warning
+SRM_BLOCKED_THRESHOLD = 0.00001     # p < 0.00001 → Blocked
+GUARDRAIL_WORSENED_THRESHOLD = 0.001 # Δ >= 0.1%p
+GUARDRAIL_SEVERE_THRESHOLD = 0.003   # Δ >= 0.3%p
+DEFAULT_EXPECTED_SPLIT = (50.0, 50.0)
+SIGNIFICANCE_ALPHA = 0.05
+```
+
+이 설정값들은 **Decision Memo 하단**에 항상 자동으로 포함되어 투명성을 보장합니다.
+
+---
+
 ## Decision Rules (MVP)
 
 기본 룰 (요약):
@@ -183,16 +208,21 @@ treatment,10050,1320,118,33
 │   └── 4_Decision_Memo.py     # Memo 생성 & Export
 ├── src/experimentos/
 │   ├── __init__.py
+│   ├── config.py              # [New] 통합 설정 (Thresholds)
 │   ├── state.py               # Session state 관리
 │   ├── logger.py              # 로깅 설정
 │   ├── healthcheck.py         # 스키마 검증 & SRM 탐지
 │   ├── analysis.py            # Primary & Guardrail 분석
 │   └── memo.py                # Decision 룰 엔진 & Memo 생성
 ├── tests/
+│   ├── test_prd_acceptance.py # [New] PRD 인수 테스트 (17 cases)
+│   ├── test_decision_branches.py # [New] 의사결정 로직 테스트
 │   ├── test_healthcheck.py
 │   ├── test_analysis.py
-│   └── test_decision.py
+│   └── test_navigation_guards.py # [New] UX 가드 테스트
 ├── .tmp/                      # 샘플 CSV 파일
+├── test_pr1_manual.py         # [New] UX 수동 검증 스크립트
+├── test_pr2_verify.py         # [New] Config 검증 스크립트
 └── requirements.txt
 ```
 
@@ -205,11 +235,14 @@ treatment,10050,1320,118,33
 python -m pytest tests/ -v
 ```
 
-**테스트 커버리지**:
-- SRM 탐지 케이스 (정상/경고/Blocked)
-- `conversions > users` 차단
-- Primary 계산 (Lift, CI, p-value)
-- Decision 룰 분기 (Launch/Hold/Rollback)
+
+
+**테스트 커버리지 (v1.0.0)**:
+- **PRD Acceptance**: `test_prd_acceptance.py` (17 scenarios matching PRD)
+- SRM 탐지 (Healthy/Warning/Blocked)
+- Guardrail Edge Cases (0.1%p, 0.3%p 경계값)
+- Decision Framework (6 Rules)
+- Navigation Guards & UX
 
 ### 실행 전 수동 체크
 - [ ] 업로드 없이 Results/Decision Memo 진입 시 친절한 안내가 뜨는가?
