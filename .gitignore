@@ -1,0 +1,40 @@
+# 임시 파일 및 중간 산출물
+.tmp/
+*.tmp
+*.temp
+
+# 환경 변수 및 비밀 정보
+.env
+.env.local
+.env.*.local
+
+# Google OAuth 인증 정보
+credentials.json
+token.json
+
+# Python 관련
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+
+# IDE 설정
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# 로그 파일
+*.log
+logs/
+
+# 빌드 산출물
+build/
+dist/
+*.egg-info/
