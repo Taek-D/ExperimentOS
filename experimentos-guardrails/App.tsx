@@ -1,11 +1,20 @@
 import React, { useState } from 'react';
 import Sidebar from './components/Sidebar';
 import Dashboard from './components/Dashboard';
+import { uploadHealthCheck, analyzeData, analyzeContinuousMetrics, analyzeBayesian } from './api/client';
+import type { HealthCheckResult, AnalysisResult, ContinuousMetricResult, BayesianInsights } from './api/client';
 import { FileUpload } from './components/FileUpload';
-import { uploadHealthCheck, analyzeData, analyzeContinuousMetrics, analyzeBayesian, HealthCheckResult, AnalysisResult, ContinuousMetricResult, BayesianInsights } from './api/client';
+import { ExperimentMetadata } from './components/ExperimentMetadata';
+import { DecisionMemo } from './components/DecisionMemo';
+import { PowerCalculator } from './components/PowerCalculator';
+
+type PageType = 'analysis' | 'memo' | 'calculator';
 
 const App: React.FC = () => {
-  const [isUploading, setIsUploading] = useState(false);
+  const [currentPage, setCurrentPage] = useState<PageType>('analysis');
+  const [experimentName, setExperimentName] = useState('Experiment');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [continuousResults, setContinuousResults] = useState<ContinuousMetricResult[]>([]);
@@ -13,8 +22,9 @@ const App: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
 
   const handleFileSelect = async (file: File) => {
-    setIsUploading(true);
+    setLoading(true);
     setError(null);
+    setSelectedFile(file);
     try {
       // 1. Health Check
       const health = await uploadHealthCheck(file);
@@ -22,7 +32,7 @@ const App: React.FC = () => {
 
       if (health.result.overall_status === 'Blocked') {
         setError("Health Check Failed: " + (health.result.schema.issues.join(", ") || health.result.srm?.message));
-        setIsUploading(false);
+        setLoading(false);
         return;
       }
 
@@ -51,11 +61,14 @@ const App: React.FC = () => {
       console.error(err);
       setError(err.response?.data?.detail || err.message || "An error occurred");
     } finally {
-      setIsUploading(false);
+      setLoading(false);
     }
   };
 
   const handleReset = () => {
+    setCurrentPage('analysis');
+    setExperimentName('Experiment');
+    setSelectedFile(null);
     setHealthResult(null);
     setAnalysisResult(null);
     setContinuousResults([]);
@@ -64,41 +77,89 @@ const App: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen w-full bg-background-dark text-white font-display overflow-hidden selection:bg-primary/30">
-      <Sidebar onReset={handleReset} />
-      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
-        {/* Background Decorative Gradients */}
-        <div className="absolute top-0 right-0 w-[800px] h-[500px] bg-primary/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
-        <div className="absolute bottom-0 left-0 w-[600px] h-[400px] bg-blue-500/5 rounded-full blur-[120px] pointer-events-none z-0"></div>
-
-        {/* Main Content */}
-        <div className="z-10 h-full flex flex-col relative p-6 overflow-y-auto">
-          {/* Header / Title if needed */}
-
-          {!analysisResult ? (
-            <div className="flex flex-col items-center justify-center h-full max-w-2xl mx-auto w-full gap-8">
-              <div className="text-center space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">New Experiment</h1>
-                <p className="text-gray-400">Upload your experiment data (CSV) to get started.</p>
-              </div>
-
-              <FileUpload onFileSelect={handleFileSelect} isUploading={isUploading} />
-
-              {error && (
-                <div className="p-4 rounded-lg bg-danger/10 border border-danger/30 text-danger w-full text-center animate-in fade-in slide-in-from-bottom-2">
-                  {error}
-                </div>
-              )}
-
-              {healthResult && !analysisResult && !error && (
-                <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 w-full text-center">
-                  Health Check Passed! Analyzing...
-                </div>
-              )}
+    <div className="min-h-screen bg-app-bg text-white font-body">
+      <main className="py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          {/* Navigation */}
+          {analysisResult && (
+            <div className="flex gap-3 mb-6">
+              <button
+                onClick={() => setCurrentPage('analysis')}
+                className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'analysis'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+              >
+                📊 Analysis
+              </button>
+              <button
+                onClick={() => setCurrentPage('memo')}
+                className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'memo'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+              >
+                📝 Decision Memo
+              </button>
+              <button
+                onClick={() => setCurrentPage('calculator')}
+                className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'calculator'
+                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                  : 'bg-white/5 text-white/70 hover:bg-white/10'
+                  }`}
+              >
+                🔢 Power Calculator
+              </button>
             </div>
-          ) : (
-            <Dashboard data={analysisResult} health={healthResult} />
           )}
+
+          {!analysisResult && <ExperimentMetadata onNameChange={setExperimentName} />}
+
+          {/* Main Content */}
+          <div className="mt-8">
+            {!analysisResult ? (
+              <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-8">
+                <div className="text-center space-y-2">
+                  <h1 className="text-3xl font-bold tracking-tight">New Experiment</h1>
+                  <p className="text-gray-400">Upload your experiment data (CSV) to get started.</p>
+                </div>
+
+                <FileUpload onFileSelect={handleFileSelect} isUploading={loading} />
+
+                {error && (
+                  <div className="p-4 rounded-lg bg-danger/10 border border-danger/30 text-danger w-full text-center animate-in fade-in slide-in-from-bottom-2">
+                    {error}
+                  </div>
+                )}
+
+                {healthResult && !analysisResult && !error && (
+                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 w-full text-center">
+                    Health Check Passed! Analyzing...
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                {currentPage === 'analysis' && (
+                  <Dashboard
+                    data={analysisResult}
+                    health={healthResult}
+                    continuousResults={continuousResults}
+                    bayesianInsights={bayesianInsights}
+                  />
+                )}
+                {currentPage === 'memo' && (
+                  <DecisionMemo
+                    experimentName={experimentName}
+                    health={healthResult}
+                    analysisResult={analysisResult}
+                    bayesianInsights={bayesianInsights}
+                  />
+                )}
+                {currentPage === 'calculator' && <PowerCalculator />}
+              </>
+            )}
+          </div>
         </div>
       </main>
     </div>
