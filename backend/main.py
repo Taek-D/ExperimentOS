@@ -1,11 +1,32 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
+import numpy as np
 import io
+import json
 import sys
 import os
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+
+
+class NumpyEncoder(json.JSONEncoder):
+    """JSON encoder that handles numpy types."""
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        if isinstance(obj, np.floating):
+            return float(obj)
+        if isinstance(obj, np.bool_):
+            return bool(obj)
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+
+
+def sanitize(obj):
+    """Convert numpy types to native Python types for JSON serialization."""
+    return json.loads(json.dumps(obj, cls=NumpyEncoder))
 
 # Add src to sys.path to import existing logic
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -85,11 +106,11 @@ async def api_analyze(file: UploadFile = File(...), guardrails: Optional[str] = 
         guardrail_cols = guardrails.split(",") if guardrails else None
         guardrail_results = calculate_guardrails(df, guardrail_columns=guardrail_cols)
         
-        return {
+        return sanitize({
             "status": "success",
             "primary_result": primary_result,
             "guardrail_results": guardrail_results
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -106,10 +127,10 @@ async def api_continuous_metrics(file: UploadFile = File(...)):
         
         continuous_results = calculate_continuous_metrics(df)
         
-        return {
+        return sanitize({
             "status": "success",
             "continuous_results": continuous_results
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -128,10 +149,10 @@ async def api_bayesian_analysis(file: UploadFile = File(...)):
         continuous_results = calculate_continuous_metrics(df)
         bayesian_insights = calculate_bayesian_insights(df, continuous_results)
         
-        return {
+        return sanitize({
             "status": "success",
             "bayesian_insights": bayesian_insights
-        }
+        })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
