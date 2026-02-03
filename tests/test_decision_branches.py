@@ -233,7 +233,7 @@ class TestDecisionBranches:
         
         # Primary가 유의해도 SRM Blocked면 Hold
         assert result["decision"] == "Hold"
-        assert "SRM" in result["reason"]
+        assert "Blocked" in result["reason"]
 
 
 class TestDecisionEdgeCases:

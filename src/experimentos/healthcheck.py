@@ -9,7 +9,7 @@ from scipy import stats
 from typing import Dict, List, Tuple, Optional
 import logging
 
-from .config import SRM_WARNING_THRESHOLD, SRM_BLOCKED_THRESHOLD, MIN_SAMPLE_SIZE_WARNING
+from .config import SRM_WARNING_THRESHOLD, SRM_BLOCKED_THRESHOLD, MIN_SAMPLE_SIZE_WARNING, config
 
 logger = logging.getLogger("experimentos")
 
@@ -40,6 +40,10 @@ def validate_schema(df: pd.DataFrame) -> Dict:
     # 2. variant 라벨 검증
     variants = df["variant"].str.strip().str.lower().unique()
     
+    if len(df) != 2:
+        issues.append(f"데이터는 정확히 2개 행이어야 합니다 (현재: {len(df)}행)")
+        return {"status": "Blocked", "issues": issues}
+
     if len(variants) != 2:
         issues.append(f"variant는 정확히 2개여야 합니다 (현재: {len(variants)}개)")
         return {"status": "Blocked", "issues": issues}
@@ -87,11 +91,68 @@ def validate_schema(df: pd.DataFrame) -> Dict:
     # 8. 작은 표본 경고 (선택 사항)
     if (df["users"] < MIN_SAMPLE_SIZE_WARNING).any():
         issues.append(f"⚠️ Warning: users가 {MIN_SAMPLE_SIZE_WARNING} 미만인 행이 있습니다. 통계적 신뢰도가 낮을 수 있습니다.")
-        if not issues or all("Warning" in issue for issue in issues):
-            return {"status": "Warning", "issues": issues}
     
+    # 9. Continuous Metric Schema Validation
+    continuous_issues = validate_continuous_schema(df, issues)
+    # validate_continuous_schema mutates issues, so we don't need to append return value if it's already in place
+    # checking logic below handles the status
+    
+    # Check if any continuous validation added a Blocked issue
+    if any("필수 컬럼 누락" in i or "불일치" in i or "Invalid variance" in i or "Continuous schema error" in i or "contains NULL" in i for i in issues):
+         return {"status": "Blocked", "issues": issues}
+
+    # If no blocked issues, check for warnings
+    if any("Warning" in i for i in issues):
+        return {"status": "Warning", "issues": issues}
+
     # 모든 검증 통과
     return {"status": "Healthy", "issues": issues if issues else ["검증 통과"]}
+
+
+def validate_continuous_schema(df: pd.DataFrame, issues: List[str]) -> List[str]:
+    """
+    Continuous metric columns (_sum, _sum_sq) validation.
+    Mutates 'issues' list if problems are found.
+    """
+    # 1. Identify sum columns
+    sum_cols = [c for c in df.columns if c.endswith("_sum") and c != "metric_sum"]
+    
+    for sum_col in sum_cols:
+        base_name = sum_col[:-4] # remove _sum
+        sum_sq_col = f"{base_name}_sum_sq"
+        
+        # Check sum_sq existence
+        if sum_sq_col not in df.columns:
+            issues.append(f"Continuous schema error: '{sum_col}' exists but '{sum_sq_col}' is missing.")
+            continue
+            
+        # Check completeness (values present for both variants)
+        # Assuming df has 2 rows (control, treatment)
+        if df[sum_col].isnull().any() or df[sum_sq_col].isnull().any():
+             issues.append(f"Continuous metric '{base_name}' contains NULL values.")
+             continue
+             
+        # Variance Feasibility Check
+        # sum_sq >= (sum^2)/n
+        for _, row in df.iterrows():
+            n = row["users"] # Default n=users. (For AOV, might need 'orders' column, simplified for MVP)
+            
+            if n < 2:
+                 # Cannot compute variance if n < 2 (though technically maybe valid data, for analysis it's useless)
+                 # We skip strict blocking for n<2 unless it breaks something else, but let's warn.
+                 continue
+
+            s = row[sum_col]
+            ss = row[sum_sq_col]
+            
+            # Variance feasibility: ss - s^2/n >= -tolerance
+            implied_ss = ss - (s**2 / n)
+            
+            if implied_ss < -config.VAR_TOLERANCE:
+                issues.append(f"Invalid variance for '{base_name}' in {row['variant']}: sum_sq < sum^2/n (diff={implied_ss:.2e})")
+
+    return issues
+
 
 
 def detect_srm(

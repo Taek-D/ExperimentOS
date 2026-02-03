@@ -43,7 +43,17 @@ class ExperimentConfig:
     # ===== Small Sample Warning =====
     MIN_SAMPLE_SIZE_WARNING: int = 100
     """작은 표본 경고 기준 (users < 100 → Warning)"""
+
+    # ===== Continuous & Bayesian Settings (V1) =====
+    VAR_TOLERANCE: float = 1e-9
+    """분산 계산 시 부동소수점 오차 허용 범위"""
     
+    BAYES_SAMPLES: int = 10000
+    """베이지안 시뮬레이션 샘플 수"""
+    
+    BAYES_SEED: int = 42
+    """베이지안 시뮬레이션 난수 시드 (Deterministic)"""
+
     def get_assumptions_text(self) -> str:
         """
         Memo에 포함할 Assumptions & Thresholds 텍스트 생성

@@ -1,0 +1,78 @@
+# flyctl launch added from .gitignore
+# 임시 파일 및 중간 산출물
+**\.tmp
+**\*.tmp
+**\*.temp
+
+# 환경 변수 및 비밀 정보
+**\.env
+**\.env.local
+**\.env.*.local
+
+# Google OAuth 인증 정보
+**\credentials.json
+**\token.json
+
+# Python 관련
+**\__pycache__
+**\*.py[cod]
+**\*$py.class
+**\*.so
+**\.Python
+**\venv
+**\env
+**\ENV
+**\.venv
+
+# IDE 설정
+**\.vscode
+**\.idea
+**\*.swp
+**\*.swo
+**\.DS_Store
+
+# 로그 파일
+**\*.log
+**\logs
+
+# 빌드 산출물
+**\build
+**\dist
+**\*.egg-info
+
+# flyctl launch added from .pytest_cache\.gitignore
+# Created by pytest automatically.
+.pytest_cache\**\*
+
+# flyctl launch added from .ruff_cache\.gitignore
+# Automatically created by ruff.
+.ruff_cache\**\*
+
+# flyctl launch added from experimentos-guardrails\.gitignore
+# Logs
+experimentos-guardrails\**\logs
+experimentos-guardrails\**\*.log
+experimentos-guardrails\**\npm-debug.log*
+experimentos-guardrails\**\yarn-debug.log*
+experimentos-guardrails\**\yarn-error.log*
+experimentos-guardrails\**\pnpm-debug.log*
+experimentos-guardrails\**\lerna-debug.log*
+
+experimentos-guardrails\**\node_modules
+experimentos-guardrails\**\dist
+experimentos-guardrails\**\dist-ssr
+experimentos-guardrails\**\*.local
+
+# Editor directories and files
+experimentos-guardrails\**\.vscode\*
+!experimentos-guardrails\**\.vscode\extensions.json
+experimentos-guardrails\**\.idea
+experimentos-guardrails\**\.DS_Store
+experimentos-guardrails\**\*.suo
+experimentos-guardrails\**\*.ntvs*
+experimentos-guardrails\**\*.njsproj
+experimentos-guardrails\**\*.sln
+experimentos-guardrails\**\*.sw?
+
+experimentos-guardrails\**\.vercel
+fly.toml

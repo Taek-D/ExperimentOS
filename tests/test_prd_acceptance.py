@@ -362,7 +362,7 @@ class TestPRDEndToEndAcceptance:
         
         # 2. Primary Analysis
         primary = calculate_primary(df)
-        assert primary["is_significant"] is True
+        assert primary["is_significant"]
         
         # 3. Guardrail Analysis
         guardrails = calculate_guardrails(df)
@@ -392,7 +392,7 @@ class TestPRDEndToEndAcceptance:
         
         # 2. Primary Analysis
         primary = calculate_primary(df)
-        assert primary["is_significant"] is True
+        assert primary["is_significant"]
         
         # 3. Guardrail Analysis
         guardrails = calculate_guardrails(df)

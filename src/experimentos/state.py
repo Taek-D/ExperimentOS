@@ -27,6 +27,15 @@ def initialize_state():
     if "expected_split" not in st.session_state:
         st.session_state.expected_split = DEFAULT_EXPECTED_SPLIT
     
+    # Experiment Charter (기획서)
+    if "charter" not in st.session_state:
+        st.session_state.charter = {
+            "hypothesis": "",
+            "primary_metric": "",
+            "target_sample_size": None,
+            "power_analysis": None  # {baseline, mde, ...} for reference
+        }
+    
     # 업로드된 데이터
     if "data" not in st.session_state:
         st.session_state.data = None

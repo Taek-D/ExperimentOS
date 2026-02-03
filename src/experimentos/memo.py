@@ -104,7 +104,9 @@ def generate_memo(
     decision: Dict,
     health: Dict,
     primary: Dict,
-    guardrails: List[Dict]
+    guardrails: List[Dict],
+    bayesian_insights: Optional[Dict] = None,
+    charter: Optional[Dict] = None
 ) -> str:
     """
     Decision Memo (1pager) Markdown 생성
@@ -115,6 +117,8 @@ def generate_memo(
         health: Health Check 결과
         primary: Primary 분석 결과
         guardrails: Guardrail 분석 결과
+        bayesian_insights: Optional Bayesian 분석 결과
+        charter: Optional experiment charter with hypothesis, primary_metric, target_sample_size
     
     Returns:
         str: Markdown 형식 1pager
@@ -134,16 +138,29 @@ def generate_memo(
         decision_badge = "⏸️ **Hold**"
     
     # 1. Summary
-    summary = f"""# Decision Memo: {experiment_name}
-
-**Date**: {today}  
-**Decision**: {decision_badge}
+    # Charter Section (PR2)
+    if charter is None:
+        charter = {}
+    charter_md = ""
+    if charter.get("hypothesis") or charter.get("target_sample_size"):
+        charter_md = f"""
+## 📜 Experiment Charter
+- **Hypothesis**: {charter.get('hypothesis', '(Not specificed)')}
+- **Primary Metric**: {charter.get('primary_metric', '(Not specified)')}
+- **Target Sample Size**: {f"{charter['target_sample_size']:,} per variation" if charter.get('target_sample_size') else "N/A"}
 
 ---
+"""
 
-## 📋 Summary
+    md_content = f"""
+# 📝 Decision Memo: {experiment_name}
+**Export Date**: {today}
 
-**{decision["reason"]}**
+## 📊 Executive Summary
+{charter_md}
+## 🚦 Final Decision
+- **Decision**: **{decision["decision"]}**
+- **Reason**: {decision["reason"]}
 """
     
     # 2. Primary Result
@@ -216,14 +233,33 @@ def generate_memo(
 - Re-evaluate when conditions improve
 """
     
+    # 7. Additional Evidence (Informational Only) - Bayesian
+    evidence_section = ""
+    if bayesian_insights and bayesian_insights.get("conversion"):
+        evidence_section = "\n---\n\n## ℹ️ Additional Evidence (Bayesian)\n\n> Note: This section is informational and did not influence the decision.\n\n"
+        
+        # Primary Conversion
+        b_conv = bayesian_insights["conversion"]
+        prob = b_conv["prob_treatment_beats_control"]
+        loss = b_conv["expected_loss"]
+        evidence_section += f"- **Primary Metric**: P(Treatment > Control) = {prob:.1%}, Expected Loss = {loss:.6f}\n"
+        
+        # Continuous
+        if bayesian_insights.get("continuous"):
+            for metric, res in bayesian_insights["continuous"].items():
+                p = res["prob_treatment_beats_control"]
+                evidence_section += f"- **{metric}**: P(Treatment > Control) = {p:.1%}\n"
+
+
+    
     # 7. Assumptions & Thresholds (새로 추가)
     from .config import config
     assumptions = config.get_assumptions_text()
     
     # 조합
-    memo = (summary + primary_section + guardrail_section + 
+    memo = (md_content + primary_section + guardrail_section + 
             health_section + decision_details_section + 
-            next_actions + assumptions)
+            next_actions + evidence_section + assumptions)
     
     return memo
 

@@ -25,7 +25,7 @@ if st.session_state.get("data") is not None:
     st.success("✅ 데이터가 업로드되었습니다.")
     
     if st.session_state.get("health_result"):
-        health_status = st.session_state.health_result.get("status", "Unknown")
+        health_status = st.session_state.health_result.get("overall_status", "Unknown")
         if health_status == "Healthy":
             st.success(f"✅ Health Check: {health_status}")
         elif health_status == "Warning":

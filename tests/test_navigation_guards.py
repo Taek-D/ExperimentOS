@@ -21,9 +21,11 @@ class TestGetHealthStatusBanner:
         st.session_state.clear()
     
     def test_no_health_check_returns_none(self):
-        """Health Check 결과가 없으면 None 반환"""
-        severity, messages = get_health_status_banner()
+        """Health Logic이 없으면 Banner 없음"""
+        # Mocking session_state explicitly
+        st.session_state.health_result = None
         
+        severity, messages = get_health_status_banner()
         assert severity is None
         assert messages == []
     

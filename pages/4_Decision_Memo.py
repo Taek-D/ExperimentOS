@@ -75,7 +75,8 @@ try:
         decision=st.session_state.decision,
         health=st.session_state.health_result,
         primary=st.session_state.primary_result,
-        guardrails=st.session_state.get("guardrails", [])
+        guardrails=st.session_state.get("guardrails", []),
+        bayesian_insights=st.session_state.get("bayesian_insights")
     )
     
     # Memo 저장

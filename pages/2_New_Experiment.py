@@ -70,6 +70,100 @@ except:
 
 st.session_state.expected_split = expected_split
 
+st.session_state.expected_split = expected_split
+
+# 1.5 Experiment Charter & Power (PR2 Addition)
+with st.expander("📜 Experiment Charter & Sample Size (Optional)", expanded=True):
+    st.caption("실험의 목적(Why)과 필요한 샘플 사이즈(How many)를 기록하세요.")
+    
+    c1, c2 = st.columns(2)
+    with c1:
+        # Charter Inputs
+        current_charter = st.session_state.charter
+        
+        hyp = st.text_area(
+            "Hypothesis (가설)", 
+            value=current_charter["hypothesis"],
+            placeholder="[What]을 변경하면 [Unknown] 때문에 [Metric]이 [Direction] 할 것이다.",
+            height=100
+        )
+        metric = st.text_input(
+            "Primary Metric (주요 지표)",
+            value=current_charter["primary_metric"],
+            placeholder="예: 구매 전환율 (Conversion Rate)"
+        )
+        
+        # Save to state
+        st.session_state.charter["hypothesis"] = hyp
+        st.session_state.charter["primary_metric"] = metric
+
+    with c2:
+        # Power Calculator
+        st.markdown("#### 🔢 Sample Size Calculator")
+        st.caption("실험 유형에 맞는 샘플 사이즈와 예상 기간을 계산합니다.")
+        
+        from src.experimentos.power import calculate_sample_size_conversion, calculate_sample_size_continuous
+        import numpy as np
+        
+        # Metric Type Selection
+        metric_type = st.radio("Metric Type", ["Conversion Rate (Proportion)", "Continuous (Mean)"], horizontal=True)
+        
+        calc_cols = st.columns(2)
+        n = 0
+        
+        # Input Fields based on Metric Type
+        with calc_cols[0]:
+            if metric_type == "Conversion Rate (Proportion)":
+                baseline = st.number_input("Baseline Rate (%)", value=10.0, step=0.1, format="%.1f") / 100.0
+                std_dev = None
+            else:
+                std_dev = st.number_input("Standard Deviation (Std Dev)", value=100.0, step=1.0, format="%.1f")
+                baseline = None
+                
+            daily_traffic = st.number_input("Est. Daily Traffic (Total Users/Day)", value=1000, step=100)
+
+        with calc_cols[1]:
+            if metric_type == "Conversion Rate (Proportion)":
+                mde_pct = st.number_input("MDE (Relative Lift %)", value=10.0, step=0.1, format="%.1f")
+                mde = mde_pct / 100.0
+                mde_abs = None
+            else:
+                mde_abs = st.number_input("MDE (Absolute Effect)", value=5.0, step=0.1, format="%.1f")
+                mde = None
+        
+        # Calculate & Apply
+        if st.button("Calculate & Apply"):
+            if metric_type == "Conversion Rate (Proportion)":
+                n = calculate_sample_size_conversion(baseline, mde)
+                params = {"type": "conversion", "baseline": baseline, "mde_pct": mde_pct}
+            else:
+                n = calculate_sample_size_continuous(std_dev, mde_abs)
+                params = {"type": "continuous", "std_dev": std_dev, "mde_abs": mde_abs}
+            
+            # Save to state
+            st.session_state.charter["target_sample_size"] = n
+            params["daily_traffic"] = daily_traffic
+            st.session_state.charter["power_analysis"] = params
+            
+            # Display Result Breakdown
+            total_n = n * 2  # Assuming 50:50
+            days = np.ceil(total_n / daily_traffic) if daily_traffic > 0 else 0
+            
+            st.success(f"✅ Applied Required Sample Size: **{n:,}** per variation")
+            st.markdown(f"""
+            **Plan Summary:**
+            - **Control**: {n:,} users
+            - **Treatment**: {n:,} users
+            - **Total Required**: {total_n:,} users
+            - **Est. Duration**: **{int(days)} days** (based on {daily_traffic:,} daily users)
+            """)
+            
+    # Target Sample Size Display
+    target_n = st.session_state.charter.get("target_sample_size")
+    if target_n:
+        st.info(f"🎯 **Target Sample Size**: {target_n:,} per variation")
+
+
 st.markdown("---")
 
 # CSV 업로더

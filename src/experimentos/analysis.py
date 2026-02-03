@@ -11,6 +11,8 @@ from typing import Dict, List, Optional, Tuple
 import logging
 
 from .config import GUARDRAIL_WORSENED_THRESHOLD, GUARDRAIL_SEVERE_THRESHOLD
+from .continuous_analysis import calculate_continuous_lift
+from .bayesian import calculate_beta_binomial, calculate_continuous_bayes
 
 logger = logging.getLogger("experimentos")
 
@@ -64,33 +66,32 @@ def calculate_primary(df: pd.DataFrame) -> Dict:
     counts = np.array([conv_t, conv_c])
     nobs = np.array([users_t, users_c])
     
-    try:
-        # 양측 검정 (alternative='two-sided')
-        z_stat, p_value = proportions_ztest(count=counts, nobs=nobs, alternative='two-sided')
-    except Exception as e:
-        logger.warning(f"z-test 계산 실패: {e}")
-        p_value = 1.0
-        z_stat = 0.0
-        
-    # 4. 95% 신뢰구간 (Absolute Lift)
-    try:
-        # method='wald' or 'agresti_caffo' (여기서는 statsmodels 기본값 사용 고려, 
-        # confint_proportions_2indep의 기본값은 'agresti-caffo'가 됨)
-        # compare='diff' -> p1 - p2 (Treatment - Control)
-        # alpha=0.05 -> 95% CI
-        
-        # 주의: statsmodels 함수 인자 순서 (count1, nobs1, count2, nobs2)
-        ci_lower, ci_upper = confint_proportions_2indep(
-            conv_t, users_t, 
-            conv_c, users_c, 
-            compare='diff', 
-            alpha=0.05,
-            method='agresti-caffo'
-        )
-    except Exception as e:
-        logger.warning(f"CI 계산 실패: {e}")
-        ci_lower, ci_upper = 0.0, 0.0
-        
+    # 기본값 초기화
+    p_value = 1.0
+    ci_lower, ci_upper = 0.0, 0.0
+    
+    if users_c > 0 and users_t > 0:
+        try:
+            # 양측 검정 (alternative='two-sided')
+            z_stat, p_value = proportions_ztest(count=counts, nobs=nobs, alternative='two-sided')
+        except Exception as e:
+            logger.warning(f"z-test 계산 실패: {e}")
+            p_value = 1.0
+            
+        # 4. 95% 신뢰구간 (Absolute Lift)
+        try:
+            # method='wald' or 'agresti_caffo'
+            ci_lower, ci_upper = confint_proportions_2indep(
+                conv_t, users_t, 
+                conv_c, users_c, 
+                compare='diff', 
+                alpha=0.05,
+                method='agresti-caffo'
+            )
+        except Exception as e:
+            logger.warning(f"CI 계산 실패: {e}")
+            ci_lower, ci_upper = 0.0, 0.0
+            
     is_significant = p_value < 0.05
     
     return {
@@ -142,8 +143,13 @@ def calculate_guardrails(
     """
     # Guardrail 컬럼 자동 탐지
     if guardrail_columns is None:
-        required_cols = {"variant", "users", "conversions"}
-        guardrail_columns = [col for col in df.columns if col not in required_cols]
+        required_cols = {"variant", "users", "conversions", "metric_sum", "metric_sum_sq", "n"}
+        guardrail_columns = [
+            col for col in df.columns 
+            if col not in required_cols 
+            and not col.endswith("_sum") 
+            and not col.endswith("_sum_sq")
+        ]
     
     if not guardrail_columns:
         return []
@@ -199,3 +205,111 @@ def calculate_guardrails(
             continue
     
     return results
+
+
+def calculate_continuous_metrics(df: pd.DataFrame) -> List[Dict]:
+    """
+    Continuous Metric 분석 Orchestrator
+    _sum, _sum_sq 컬럼을 탐지하여 분석 수행
+    """
+    results = []
+    
+    # Identify continuous metrics (look for _sum)
+    metric_names = [
+        col[:-4] for col in df.columns 
+        if col.endswith("_sum") and col != "metric_sum"
+    ]
+    
+    if not metric_names:
+        return results
+        
+    control_row = df[df["variant"] == "control"].iloc[0]
+    treatment_row = df[df["variant"] == "treatment"].iloc[0]
+    
+    for metric in metric_names:
+        sum_col = f"{metric}_sum"
+        sum_sq_col = f"{metric}_sum_sq"
+        
+        # Determine N (default to users)
+        # In a fuller implementation, could look for {metric}_n or similar
+        # For this MVP, we use 'users' as n (Revenue per User case)
+        n_c = int(control_row["users"])
+        n_t = int(treatment_row["users"])
+        
+        control_stats = {
+            "sum": float(control_row[sum_col]),
+            "sum_sq": float(control_row[sum_sq_col]),
+            "n": n_c
+        }
+        
+        treatment_stats = {
+            "sum": float(treatment_row[sum_col]),
+            "sum_sq": float(treatment_row[sum_sq_col]),
+            "n": n_t
+        }
+        
+        result = calculate_continuous_lift(control_stats, treatment_stats, metric)
+        if result["is_valid"]:
+            results.append(result)
+            
+    return results
+
+
+def calculate_bayesian_insights(
+    df: pd.DataFrame, 
+    continuous_results: List[Dict] = None
+) -> Dict:
+    """
+    Bayesian 분석 Orchestrator (Informational)
+    """
+    insights = {
+        "conversion": None,
+        "continuous": {}
+    }
+    
+    control_row = df[df["variant"] == "control"].iloc[0]
+    treatment_row = df[df["variant"] == "treatment"].iloc[0]
+    
+    # 1. Conversion Rate (Beta-Binomial)
+    try:
+        insights["conversion"] = calculate_beta_binomial(
+            control_conversions=int(control_row["conversions"]),
+            control_total=int(control_row["users"]),
+            treatment_conversions=int(treatment_row["conversions"]),
+            treatment_total=int(treatment_row["users"])
+        )
+    except Exception as e:
+        logger.warning(f"Bayesian conversion analysis failed: {e}")
+        
+    # 2. Continuous Metrics
+    if continuous_results:
+        for res in continuous_results:
+            metric = res["metric_name"]
+            try:
+                # Reconstruct sufficient stats roughly from means/n (or pass them in if we wanted to be cleaner)
+                # But here we assume 'n' matches 'users' as per calculate_continuous_metrics assumptions
+                
+                # Check for zero variance edge cases handled in continuous_analysis
+                # If result was valid, we can compute Bayes
+                
+                # We need sum info again. Let's just grab from DF for simplicity.
+                sum_col = f"{metric}_sum"
+                sum_sq_col = f"{metric}_sum_sq"
+                
+                c_stats = {
+                    "sum": float(control_row[sum_col]),
+                    "sum_sq": float(control_row[sum_sq_col]),
+                    "n": int(control_row["users"])
+                }
+                t_stats = {
+                    "sum": float(treatment_row[sum_col]),
+                    "sum_sq": float(treatment_row[sum_sq_col]),
+                    "n": int(treatment_row["users"])
+                }
+                
+                insights["continuous"][metric] = calculate_continuous_bayes(c_stats, t_stats)
+            except Exception as e:
+                logger.warning(f"Bayesian continuous analysis failed for {metric}: {e}")
+                
+    return insights
+

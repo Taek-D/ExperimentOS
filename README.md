@@ -39,8 +39,9 @@ ExperimentOS는 **실험 운영의 표준(Health Check → Result → Decision M
 
 3) **Primary 결과 분석 (전환율)**
 - conversion_rate 기반 `lift(절대/상대)`, `95% CI`, `p-value`
-- 기본 검정: two-proportion z-test (양측)  
-  *(작은 표본/극단 비율은 Fisher exact로 대체하는 옵션 권장)*
+- 기본 검정: two-proportion z-test (양측)
+- **New (PR1)**: 연속형 지표(매출, 체류시간 등) 지원 (Welch's t-test)
+- **New (PR1)**: 베이지안 분석(Beta-Binomial/Posterior Simulation) 참고용 제공
 
 4) **Guardrail 비교**
 - 선택한 guardrail 컬럼(control vs treatment) 비교
@@ -57,6 +58,12 @@ ExperimentOS는 **실험 운영의 표준(Health Check → Result → Decision M
 - **Navigation Guards**: 데이터 없이 결과 페이지 진입 시 차단 및 안내
 - **Status Banners**: 데이터 품질 문제(Blocked/Warning) 상단 배너 표시
 - **Config Centralization**: 모든 임계치를 `config.py`에서 통합 관리
+
+7) **Experiment Planning (New, PR2)**
+- **Experiment Charter**: 실험 가설(Hypothesis) 및 Primary Metric 사전 정의
+- **Power Calculator**: 목표 표본 크기(Sample Size) 및 예상 기간 산출
+  - Conversion(비율) 및 Continuous(평균) 지표 모두 지원
+  - 입력된 값은 Session State에 저장되어 Memo에 자동 반영
 
 ---
 
@@ -99,6 +106,9 @@ streamlit run app.py
 
 #### Step 1: New Experiment 페이지
 1. 실험명 입력 (예: "홈화면 배너 A/B 테스트")
+1-1. **(Optional) Experiment Charter 작성**:
+   - 실험 가설 및 지표 정의
+   - **Sample Size Calculator**로 필요 표본 수 계산 및 적용
 2. 기대 트래픽 분배 입력 (기본: 50:50)
 3. CSV 파일 업로드
 4. Health Check 자동 실행 및 결과 확인
