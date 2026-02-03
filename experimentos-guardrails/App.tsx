@@ -82,34 +82,36 @@ const App: React.FC = () => {
         <div className="max-w-7xl mx-auto">
           {/* Navigation */}
           {analysisResult && (
-            <div className="flex gap-3 mb-6">
-              <button
-                onClick={() => setCurrentPage('analysis')}
-                className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'analysis'
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10'
-                  }`}
-              >
-                📊 Analysis
-              </button>
-              <button
-                onClick={() => setCurrentPage('memo')}
-                className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'memo'
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10'
-                  }`}
-              >
-                📝 Decision Memo
-              </button>
-              <button
-                onClick={() => setCurrentPage('calculator')}
-                className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'calculator'
-                  ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                  : 'bg-white/5 text-white/70 hover:bg-white/10'
-                  }`}
-              >
-                🔢 Power Calculator
-              </button>
+            <div className="sticky top-0 z-50 bg-app-bg/95 backdrop-blur-sm pb-4 mb-2">
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setCurrentPage('analysis')}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'analysis'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    : 'bg-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                >
+                  📊 Analysis
+                </button>
+                <button
+                  onClick={() => setCurrentPage('memo')}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'memo'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    : 'bg-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                >
+                  📝 Decision Memo
+                </button>
+                <button
+                  onClick={() => setCurrentPage('calculator')}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'calculator'
+                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
+                    : 'bg-white/5 text-white/70 hover:bg-white/10'
+                    }`}
+                >
+                  🔢 Power Calculator
+                </button>
+              </div>
             </div>
           )}
 

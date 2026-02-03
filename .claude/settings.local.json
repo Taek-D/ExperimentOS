@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(powershell -Command \"irm https://fly.io/install.ps1 | iex\")",
+      "Bash(powershell -NoProfile -Command \"Invoke-RestMethod -Uri ''https://experimentos-api.onrender.com/'' -Method Get -TimeoutSec 60 2>&1\")",
+      "Bash(powershell -NoProfile -Command \"Set-Location ''e:\\\\프로젝트\\\\안티그래비티 프로젝트\\\\에이블리\\\\experimentos-guardrails''; vercel env pull .env.vercel.local 2>&1\")",
+      "Bash(powershell -NoProfile -Command \"\\(Invoke-WebRequest -Uri ''https://experimentos-guardrails.vercel.app/assets/index-B_wMMHB6.js'' -UseBasicParsing -TimeoutSec 30\\).Content\")",
+      "Bash(git add:*)"
+    ]
+  }
+}

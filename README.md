@@ -64,9 +64,9 @@ ExperimentOS는 **실험 운영의 표준(Health Check → Result → Decision M
    - 근거/리스크/Next Actions 포함
    - Markdown/HTML 다운로드
 
-6. **Experiment Planning**
-   - Experiment Charter: 가설 및 Primary Metric 사전 정의
-   - Power Calculator: 목표 표본 크기 및 예상 기간 산출
+6. **Experiment Planning (Web 지원)**
+   - **Experiment Charter**: 가설 및 Primary Metric 사전 정의
+   - **Power Calculator**: 목표 표본 크기(Conversion/Continuous) 및 예상 기간 산출
 
 ---
 
@@ -90,7 +90,11 @@ ExperimentOS는 **실험 운영의 표준(Health Check → Result → Decision M
 ├── experimentos-guardrails/       # React Frontend (Vercel 배포)
 │   ├── api/client.ts              # API client
 │   ├── components/                # React 컴포넌트
-│   ├── App.tsx                    # 메인 앱
+│   │   ├── Dashboard.tsx          # 결과 대시보드 (Tabs)
+│   │   ├── DecisionMemo.tsx       # 의사결정 메모 생성
+│   │   ├── PowerCalculator.tsx    # 표본 크기 계산기
+│   │   └── ...
+│   ├── App.tsx                    # 메인 앱 & 라우팅
 │   ├── vercel.json                # Vercel 배포 설정
 │   └── .env.production            # 프로덕션 API URL
 │
@@ -232,7 +236,9 @@ vercel --prod
 ```
 
 ### Backend (Render)
-GitHub main 브랜치에 push하면 자동 배포됩니다. 설정은 `render.yaml` 참조.
+GitHub main 브랜치에 push하면 자동 배포됩니다. `render.yaml` 설정 파일이 포함되어 있습니다.
+- 자세한 배포 방법은 **[Render Deployment Guide](./render_deployment.md)**를 참고하세요.
+- **주의**: Render Free Tier는 15분 비활성 시 슬립 모드로 전환되며, 깨어나는 데 약 30~50초가 소요됩니다.
 
 ### Docker (로컬)
 ```bash

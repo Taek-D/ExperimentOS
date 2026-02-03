@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { DecisionMemoResponse, generateDecisionMemo, HealthCheckResult, AnalysisResult, BayesianInsights } from '../api/client';
 import Icon from './Icon';
 
@@ -13,6 +13,17 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
     const [memo, setMemo] = useState<DecisionMemoResponse | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const resultRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        if (memo && resultRef.current) {
+            // Give a small delay to ensure DOM render
+            setTimeout(() => {
+                resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
+    }, [memo]);
 
     const handleGenerate = async () => {
         if (!health || !analysisResult) {
@@ -81,7 +92,7 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
     };
 
     return (
-        <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <div className="max-w-5xl mx-auto p-6 space-y-6 pb-20">
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-3xl font-bold text-white font-display">Decision Memo</h2>
@@ -114,7 +125,7 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
             )}
 
             {memo && (
-                <div className="space-y-6">
+                <div ref={resultRef} className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500 scroll-mt-32">
                     {/* Decision Banner */}
                     <div className={`p-6 rounded-2xl border ${getDecisionColor(memo.decision.decision)}`}>
                         <div className="flex items-center gap-3 mb-3">
@@ -156,10 +167,11 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
 
                     {/* Memo Preview */}
                     <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
-                        <div className="p-4 border-b border-white/10 bg-white/5">
+                        <div className="p-4 border-b border-white/10 bg-white/5 flex justify-between items-center">
                             <h4 className="text-white font-semibold">Memo Preview</h4>
+                            <span className="text-xs text-white/40">Scroll to see full content</span>
                         </div>
-                        <div className="p-6 prose prose-invert prose-sm max-w-none">
+                        <div className="p-6 prose prose-invert prose-sm max-w-none max-h-[800px] overflow-y-auto custom-scrollbar">
                             <div dangerouslySetInnerHTML={{ __html: memo.memo_html }} />
                         </div>
                     </div>
