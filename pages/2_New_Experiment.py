@@ -9,6 +9,9 @@ import pandas as pd
 from datetime import date
 from src.experimentos.state import initialize_state, reset_state
 from src.experimentos.healthcheck import run_health_check
+from src.experimentos.config import ExperimentConfig
+
+config = ExperimentConfig()
 
 # State 초기화
 initialize_state()
@@ -85,7 +88,7 @@ with st.expander("📜 Experiment Charter & Sample Size (Optional)", expanded=Tr
             "Hypothesis (가설)", 
             value=current_charter["hypothesis"],
             placeholder="[What]을 변경하면 [Unknown] 때문에 [Metric]이 [Direction] 할 것이다.",
-            height=100
+            height=config.HYPOTHESIS_TEXT_AREA_HEIGHT
         )
         metric = st.text_input(
             "Primary Metric (주요 지표)",

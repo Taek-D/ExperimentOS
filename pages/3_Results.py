@@ -24,7 +24,7 @@ st.title("📊 Results")
 if not has_data():
     st.warning("⚠️ 데이터가 없습니다. New Experiment 페이지에서 CSV 파일을 업로드하세요.")
     if st.button("📂 New Experiment로 이동"):
-        st.info("사이드바에서 'New Experiment'를 클릭하세요.")
+        st.switch_page("pages/2_New_Experiment.py")
     st.stop()
 
 # 데이터 로드
@@ -42,12 +42,13 @@ from src.experimentos.state import get_health_status_banner
 severity, messages = get_health_status_banner()
 
 if severity == "Blocked":
-    st.error("🚫 **데이터 품질 문제 (Blocked)**")
+    st.error("🚫 **데이터 구조가 올바르지 않아 분석을 시작할 수 없습니다. (Blocked)**")
     st.markdown("**발견된 이슈:**")
     for msg in messages:
         st.write(f"- {msg}")
     st.info("위의 이슈를 수정한 후 다시 업로드하세요.")
     st.markdown("---")
+    st.stop()  # Critical: Prevent analysis execution when Blocked
 elif severity == "Warning":
     st.warning("⚠️ **경고 (Warning)**")
     st.markdown("**발견된 이슈:**")

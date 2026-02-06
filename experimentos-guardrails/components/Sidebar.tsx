@@ -73,7 +73,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, onClick }) => 
   return (
     <a
       href="#"
-      onClick={(e) => { e.preventDefault(); onClick && onClick(); }}
+      onClick={(e) => { e.preventDefault(); onClick?.(); }}
       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive
         ? 'bg-primary text-background-dark font-bold shadow-lg shadow-primary/20'
         : 'hover:bg-white/5 text-white/60 hover:text-white'

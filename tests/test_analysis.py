@@ -67,8 +67,8 @@ class TestCalculatePrimary:
         
         assert result["control"]["rate"] == 0.0
         assert result["absolute_lift"] > 0
-        # Relative lift는 inf 처리 (또는 아주 큰 값)
-        assert result["relative_lift"] == float('inf')
+        # Relative lift는 None 처리 (control rate가 0이므로 의미 없음)
+        assert result["relative_lift"] is None  # Fixed: was float('inf')
         
     def test_calculate_primary_zero_users(self):
         """Users가 0인 경우 (예외 방어)"""
@@ -107,5 +107,67 @@ class TestCalculatePrimary:
         assert ci[1] < 0
 
 
+class TestCalculateGuardrails:
+    """Guardrail 분석 테스트 (Must-Fix #2)"""
+    
+    def test_guardrail_relative_lift_normal(self):
+        """Guardrail relative_lift 정상 계산"""
+        from src.experimentos.analysis import calculate_guardrails
+        
+        df = pd.DataFrame({
+            "variant": ["control", "treatment"],
+            "users": [10000, 10000],
+            "conversions": [1000, 1200],
+            "bounce_rate": [500, 450]  # Guardrail metric: 5% → 4.5%
+        })
+        
+        results = calculate_guardrails(df, ["bounce_rate"])
+        
+        assert len(results) == 1
+        assert results[0]["name"] == "bounce_rate"
+        assert results[0]["control_rate"] == 0.05
+        assert results[0]["treatment_rate"] == 0.045
+        # relative_lift = (0.045 / 0.05) - 1 = -0.1
+        assert results[0]["relative_lift"] == pytest.approx(-0.1)
+    
+    def test_guardrail_relative_lift_zero_control(self):
+        """Guardrail relative_lift - control rate가 0인 경우"""
+        from src.experimentos.analysis import calculate_guardrails
+        
+        df = pd.DataFrame({
+            "variant": ["control", "treatment"],
+            "users": [10000, 10000],
+            "conversions": [1000, 1200],
+            "bounce_rate": [0, 450]  # Control bounce_rate = 0
+        })
+        
+        results = calculate_guardrails(df, ["bounce_rate"])
+        
+        assert len(results) == 1
+        assert results[0]["control_rate"] == 0.0
+        assert results[0]["treatment_rate"] == 0.045
+        # relative_lift는 None (control rate가 0이므로 의미 없음)
+        assert results[0]["relative_lift"] is None
+    
+    def test_guardrail_relative_lift_error_state(self):
+        """Guardrail 에러 상태에서도 relative_lift 존재"""
+        from src.experimentos.analysis import calculate_guardrails
+        
+        df = pd.DataFrame({
+            "variant": ["control", "treatment"],
+            "users": [10000, 10000],
+            "conversions": [1000, 1200],
+            # bounce_rate 누락 - KeyError 발생 예상
+        })
+        
+        results = calculate_guardrails(df, ["bounce_rate"])
+        
+        assert len(results) == 1
+        assert "error" in results[0]
+        # 에러 상태에서도 relative_lift는 None으로 스키마 일관성 유지
+        assert results[0]["relative_lift"] is None
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])
+

@@ -24,16 +24,15 @@ class TestPRDSRMAcceptance:
     def test_srm_healthy_normal_50_50_split(self):
         """
         PRD 10.2.1: SRM Healthy
-        
+
         Scenario: Normal 50/50 split (10000 vs 10000)
         Expected: Healthy status, p-value > 0.05
         """
         result = detect_srm(
-            control_users=10000,
-            treatment_users=10000,
-            expected_split=(50.0, 50.0)
+            variants_data={"control": 10000, "treatment": 10000},
+            expected_split=[50.0, 50.0]
         )
-        
+
         assert result["status"] == "Healthy"
         assert result["p_value"] > 0.05
         assert result["observed"]["control"] == 10000
@@ -42,16 +41,15 @@ class TestPRDSRMAcceptance:
     def test_srm_blocked_severe_imbalance(self):
         """
         PRD 10.2.1: SRM Blocked - Severe Imbalance
-        
+
         Scenario: 5000 vs 10000 (33% vs 67%)
         Expected: Blocked status, p < 0.00001
         """
         result = detect_srm(
-            control_users=5000,
-            treatment_users=10000,
-            expected_split=(50.0, 50.0)
+            variants_data={"control": 5000, "treatment": 10000},
+            expected_split=[50.0, 50.0]
         )
-        
+
         assert result["status"] == "Blocked"
         assert result["p_value"] < 0.00001
         assert "심각한 SRM" in result["message"]
@@ -59,16 +57,15 @@ class TestPRDSRMAcceptance:
     def test_srm_warning_moderate_imbalance(self):
         """
         PRD 7.1: SRM Warning
-        
+
         Scenario: 5500 vs 6500 (moderate imbalance)
         Expected: Warning status, 0.00001 < p < 0.001
         """
         result = detect_srm(
-            control_users=5500,
-            treatment_users=6500,
-            expected_split=(50.0, 50.0)
+            variants_data={"control": 5500, "treatment": 6500},
+            expected_split=[50.0, 50.0]
         )
-        
+
         assert result["status"] in ["Warning", "Blocked"]
         assert result["p_value"] < 0.001
 

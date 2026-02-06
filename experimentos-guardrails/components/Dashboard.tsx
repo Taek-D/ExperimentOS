@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import StatsCard from './StatsCard';
 import MetricsTable from './MetricsTable';
-import Icon from './Icon';
+import ForestPlot from './charts/ForestPlot';
 import { AnalysisResult, HealthCheckResult, ContinuousMetricResult, BayesianInsights } from '../api/client';
 import { ContinuousMetrics } from './ContinuousMetrics';
 import { BayesianInsightsComponent } from './BayesianInsights';
@@ -22,7 +22,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
 
   // Derive stats
   const totalGuardrails = guardrails.length;
-  const severeGuardrails = guardrails.filter((g: any) => g.severe).length;
+  const severeGuardrails = guardrails.filter(g => g.severe).length;
 
   const liftPercentage = (primary.relative_lift * 100).toFixed(2);
   const isPositive = primary.relative_lift > 0;
@@ -57,7 +57,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="stats-cards">
           <StatsCard
             title="Primary Lift"
             value={`${isPositive ? '+' : ''}${liftPercentage}%`}
@@ -95,7 +95,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
       </header>
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex gap-2 px-6 pb-4 border-b border-white/10">
+        <div className="flex gap-2 px-6 pb-4 border-b border-white/10" data-tour="dashboard-tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
@@ -115,7 +115,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
         </div>
 
         <div className="flex-1 overflow-auto p-6">
-          {activeTab === 'primary' && <MetricsTable data={data} />}
+          {activeTab === 'primary' && (
+            <div className="space-y-6">
+              <MetricsTable data={data} />
+              <ForestPlot primary={primary} guardrails={guardrails} />
+            </div>
+          )}
           {activeTab === 'guardrails' && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-white mb-4">Guardrail Metrics</h3>
@@ -123,7 +128,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
                 <div className="text-center py-12 text-white/50"><p>No guardrails specified</p></div>
               ) : (
                 <div className="space-y-3">
-                  {guardrails.map((g: any, idx: number) => (
+                  {guardrails.map((g, idx) => (
                     <div key={idx} className="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl">
                       <div className="flex items-center justify-between mb-4">
                         <h4 className="text-lg font-semibold text-white">{g.name}</h4>

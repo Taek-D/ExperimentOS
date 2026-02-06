@@ -1,5 +1,7 @@
 import React from 'react';
 import type { BayesianInsights } from '../api/client';
+import PosteriorDistribution from './charts/PosteriorDistribution';
+import GlossaryTerm from './GlossaryTerm';
 
 interface BayesianInsightsProps {
     insights: BayesianInsights | null;
@@ -33,7 +35,7 @@ export const BayesianInsightsComponent: React.FC<BayesianInsightsProps> = ({ ins
                     <div className="space-y-3">
                         <div>
                             <div className="flex justify-between text-sm mb-2">
-                                <span className="text-white/70">Probability Treatment &gt; Control</span>
+                                <span className="text-white/70"><GlossaryTerm termKey="bayesian-probability">Probability Treatment &gt; Control</GlossaryTerm></span>
                                 <span className="text-white font-medium">
                                     {(insights.conversion.prob_treatment_beats_control * 100).toFixed(1)}%
                                 </span>
@@ -47,10 +49,17 @@ export const BayesianInsightsComponent: React.FC<BayesianInsightsProps> = ({ ins
                         </div>
 
                         <div className="flex justify-between text-sm">
-                            <span className="text-white/70">Expected Loss (Risk)</span>
+                            <span className="text-white/70"><GlossaryTerm termKey="expected-loss">Expected Loss (Risk)</GlossaryTerm></span>
                             <span className="text-white font-mono">{insights.conversion.expected_loss.toFixed(6)}</span>
                         </div>
                     </div>
+
+                    {insights.conversion.control_posterior && insights.conversion.treatment_posterior && (
+                        <PosteriorDistribution
+                            control={insights.conversion.control_posterior}
+                            treatment={insights.conversion.treatment_posterior}
+                        />
+                    )}
                 </div>
             )}
 
@@ -58,7 +67,7 @@ export const BayesianInsightsComponent: React.FC<BayesianInsightsProps> = ({ ins
                 <div className="space-y-4">
                     <h4 className="text-lg font-semibold text-white">Continuous Metrics</h4>
 
-                    {Object.entries(insights.continuous).map(([metric, result]: [string, any]) => (
+                    {Object.entries(insights.continuous).map(([metric, result]) => (
                         <div key={metric} className="space-y-2">
                             <div className="flex justify-between text-sm mb-2">
                                 <span className="text-white/70">{metric}</span>

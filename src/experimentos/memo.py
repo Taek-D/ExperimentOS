@@ -30,7 +30,7 @@ def make_decision(
             "details": List[str]  # 상세 근거
         }
     """
-    details = []
+    details: list[str] = []
     
     # 룰 1: Blocked (스키마/논리 오류 또는 Severe SRM)
     if health["overall_status"] == "Blocked":

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import Icon from './Icon';
+import PowerCurve from './charts/PowerCurve';
 
 interface PowerCalculatorProps {
     onApply?: (sampleSize: number) => void;
@@ -234,36 +235,47 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
 
             {/* Results */}
             {result && (
-                <div className="bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 rounded-2xl p-6 space-y-4">
-                    <h3 className="text-xl font-bold text-white">✅ Sample Size Calculation Result</h3>
+                <div className="space-y-6">
+                    <div className="bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/30 rounded-2xl p-6 space-y-4">
+                        <h3 className="text-xl font-bold text-white">Sample Size Calculation Result</h3>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                            <div className="text-white/60 text-sm mb-1">Control</div>
-                            <div className="text-white text-2xl font-bold">{result.sampleSizePerVariation.toLocaleString()}</div>
-                            <div className="text-white/60 text-xs mt-1">users</div>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                <div className="text-white/60 text-sm mb-1">Control</div>
+                                <div className="text-white text-2xl font-bold">{result.sampleSizePerVariation.toLocaleString()}</div>
+                                <div className="text-white/60 text-xs mt-1">users</div>
+                            </div>
+
+                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                <div className="text-white/60 text-sm mb-1">Treatment</div>
+                                <div className="text-white text-2xl font-bold">{result.sampleSizePerVariation.toLocaleString()}</div>
+                                <div className="text-white/60 text-xs mt-1">users</div>
+                            </div>
+
+                            <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                <div className="text-white/60 text-sm mb-1">Total Required</div>
+                                <div className="text-white text-2xl font-bold">{result.totalSampleSize.toLocaleString()}</div>
+                                <div className="text-white/60 text-xs mt-1">users</div>
+                            </div>
                         </div>
 
                         <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                            <div className="text-white/60 text-sm mb-1">Treatment</div>
-                            <div className="text-white text-2xl font-bold">{result.sampleSizePerVariation.toLocaleString()}</div>
-                            <div className="text-white/60 text-xs mt-1">users</div>
-                        </div>
-
-                        <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                            <div className="text-white/60 text-sm mb-1">Total Required</div>
-                            <div className="text-white text-2xl font-bold">{result.totalSampleSize.toLocaleString()}</div>
-                            <div className="text-white/60 text-xs mt-1">users</div>
+                            <div className="text-white/60 text-sm mb-1">Estimated Duration</div>
+                            <div className="text-white text-3xl font-bold">{result.estimatedDays} days</div>
+                            <div className="text-white/60 text-xs mt-1">
+                                Based on {dailyTraffic.toLocaleString()} daily users
+                            </div>
                         </div>
                     </div>
 
-                    <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                        <div className="text-white/60 text-sm mb-1">Estimated Duration</div>
-                        <div className="text-white text-3xl font-bold">{result.estimatedDays} days</div>
-                        <div className="text-white/60 text-xs mt-1">
-                            Based on {dailyTraffic.toLocaleString()} daily users
-                        </div>
-                    </div>
+                    {metricType === 'conversion' && (
+                        <PowerCurve
+                            baselineRate={baselineRate / 100}
+                            mdeRelative={mdeRelative / 100}
+                            alpha={alpha}
+                            currentN={result.sampleSizePerVariation}
+                        />
+                    )}
                 </div>
             )}
         </div>

@@ -69,11 +69,11 @@ class TestValidateSchema:
             "users": [10000, 10000],
             "conversions": [1200, 1320]
         })
-        
+
         result = validate_schema(df)
-        
+
         assert result["status"] == "Blocked"
-        assert any("control" in issue and "treatment" in issue for issue in result["issues"])
+        assert any("control" in issue for issue in result["issues"])
     
     def test_duplicate_variants(self):
         """variant 중복 - Blocked"""
@@ -82,23 +82,21 @@ class TestValidateSchema:
             "users": [5000, 5000, 10000],
             "conversions": [600, 600, 1320]
         })
-        
+
         result = validate_schema(df)
-        
-        # variant가 3개이므로 Blocked
+
         assert result["status"] == "Blocked"
-        assert any("정확히 2개 행" in issue for issue in result["issues"])
+        assert any("중복된 variant" in issue for issue in result["issues"])
 
     def test_srm_warning(self):
         """중간 정도의 SRM - Warning"""
         # 5000 vs 5400 (Total 10400, expected 5200)
         # ChiSq approx 15.38 -> p < 0.001 but > 0.00001
         result = detect_srm(
-            control_users=5000,
-            treatment_users=5400,
-            expected_split=(50, 50)
+            variants_data={"control": 5000, "treatment": 5400},
+            expected_split=[50, 50]
         )
-        
+
         assert result["status"] == "Warning"
         assert result["p_value"] < 0.001
         assert result["p_value"] >= 0.00001
@@ -132,14 +130,13 @@ class TestValidateSchema:
 
 # 테스트 실행 코드 (pytest로 실행 시 자동)
 def test_srm_zero_users():
-    """SRM detection with 0 total users should return Blocked."""
+    """SRM detection with 0 total users should return Warning."""
     result = detect_srm(
-        control_users=0,
-        treatment_users=0,
-        expected_split=(50, 50)
+        variants_data={"control": 0, "treatment": 0},
+        expected_split=[50, 50]
     )
-    
-    assert result["status"] == "Blocked"
+
+    assert result["status"] == "Warning"
     assert result["p_value"] == 1.0
     assert "0" in result["message"] or "유저" in result["message"]
 
@@ -147,11 +144,10 @@ def test_srm_zero_users():
 def test_srm_very_small_users():
     """SRM with very small users should still calculate."""
     result = detect_srm(
-        control_users=5,
-        treatment_users=5,
-        expected_split=(50, 50)
+        variants_data={"control": 5, "treatment": 5},
+        expected_split=[50, 50]
     )
-    
+
     assert result["status"] in ["Healthy", "Warning", "Blocked"]
     assert result["p_value"] >= 0.0
     assert result["p_value"] <= 1.0

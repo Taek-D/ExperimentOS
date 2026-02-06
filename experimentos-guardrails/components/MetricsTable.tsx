@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import Icon from './Icon';
+import GlossaryTerm from './GlossaryTerm';
 import { AnalysisResult } from '../api/client';
 
 interface MetricsTableProps {
@@ -32,7 +33,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
     });
 
     // 2. Guardrails Rows
-    g.forEach((gr: any, idx: number) => {
+    g.forEach((gr, idx) => {
       items.push({
         id: `gr-${idx}`,
         type: "Guardrail",
@@ -55,7 +56,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
   if (!data) return null;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 px-6 pb-6">
+    <div className="flex-1 flex flex-col min-h-0 px-6 pb-6" data-tour="metrics-table">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-4 py-2">
         <div className="flex items-center gap-3 flex-1 min-w-[300px]">
@@ -91,8 +92,8 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
               <th className="p-4 pl-6 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 w-[30%]">Metric Name</th>
               <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">Baseline (A)</th>
               <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">Variant (B)</th>
-              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">Delta</th>
-              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">P-Value</th>
+              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right"><GlossaryTerm termKey="delta">Delta</GlossaryTerm></th>
+              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right"><GlossaryTerm termKey="p-value">P-Value</GlossaryTerm></th>
               <th className="p-4 pr-6 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">Status</th>
             </tr>
           </thead>
@@ -108,8 +109,23 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
   );
 };
 
+interface MetricRowData {
+  id: string;
+  type: string;
+  name: string;
+  key: string;
+  baseline: string;
+  variant: string;
+  delta: string;
+  pValue: string;
+  power: string;
+  status: string;
+  isCritical: boolean;
+  isWarning: boolean;
+}
+
 interface MetricRowProps {
-  row: any;
+  row: MetricRowData;
 }
 
 const MetricRow: React.FC<MetricRowProps> = ({ row }) => {

@@ -1,11 +1,41 @@
 {
   "permissions": {
     "allow": [
-      "Bash(powershell -Command \"irm https://fly.io/install.ps1 | iex\")",
-      "Bash(powershell -NoProfile -Command \"Invoke-RestMethod -Uri ''https://experimentos-api.onrender.com/'' -Method Get -TimeoutSec 60 2>&1\")",
-      "Bash(powershell -NoProfile -Command \"Set-Location ''e:\\\\프로젝트\\\\안티그래비티 프로젝트\\\\에이블리\\\\experimentos-guardrails''; vercel env pull .env.vercel.local 2>&1\")",
-      "Bash(powershell -NoProfile -Command \"\\(Invoke-WebRequest -Uri ''https://experimentos-guardrails.vercel.app/assets/index-B_wMMHB6.js'' -UseBasicParsing -TimeoutSec 30\\).Content\")",
-      "Bash(git add:*)"
+      "Bash(python -m pytest:*)",
+      "Bash(pylint:*)",
+      "Bash(mypy:*)",
+      "Bash(black:*)",
+      "Bash(pip install:*)",
+      "Bash(uvicorn:*)",
+      "Bash(streamlit:*)",
+      "Bash(npm run:*)",
+      "Bash(npm test:*)",
+      "Bash(npm install:*)",
+      "Bash(npx tsc:*)",
+      "Bash(git add:*)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git commit:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "WebSearch",
+      "WebFetch(domain:sandroroth.com)"
+    ],
+    "deny": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo $CLAUDE_FILE_PATH | grep -q '\\.py$' && black --line-length 100 --quiet $CLAUDE_FILE_PATH 2>/dev/null || true"
+          }
+        ]
+      }
     ]
   }
 }

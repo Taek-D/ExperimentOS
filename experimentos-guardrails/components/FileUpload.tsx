@@ -1,8 +1,5 @@
 
 import React, { useState, useCallback } from 'react';
-import Icon from './Icon';
-// Actually Sidebar has Icon defined inside it, I should extract it or copy it.
-// Let's assume I will extract Icon later, for now I'll use a simple version or copy provided snippet
 
 const IconWrapper = ({ name, className = "", size = 24 }: { name: string, className?: string, size?: number }) => (
     <span className={`material-symbols-rounded ${className}`} style={{ fontSize: size }}>
@@ -33,19 +30,22 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
         e.preventDefault();
         setIsDragging(false);
 
-        if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-            onFileSelect(e.dataTransfer.files[0]);
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            onFileSelect(file);
         }
     }, [onFileSelect]);
 
     const handleFileInput = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files.length > 0) {
-            onFileSelect(e.target.files[0]);
+        const file = e.target.files?.[0];
+        if (file) {
+            onFileSelect(file);
         }
     }, [onFileSelect]);
 
     return (
         <div
+            data-tour="file-upload"
             className={`relative w-full h-64 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all duration-300 ${isDragging
                 ? 'border-primary bg-primary/10'
                 : 'border-border-dark/50 bg-secondary-dark/30 hover:border-primary/50'

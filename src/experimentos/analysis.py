@@ -7,17 +7,269 @@ Primary metric(전환율) 및 Guardrail 분석 로직
 import pandas as pd
 import numpy as np
 from statsmodels.stats.proportion import proportions_ztest, confint_proportions_2indep
-from typing import Dict, List, Optional, Tuple
-import logging
+try:
+    from statsmodels.stats.multitest import multipletests
+except ImportError:
+    multipletests = None
 
-from .config import GUARDRAIL_WORSENED_THRESHOLD, GUARDRAIL_SEVERE_THRESHOLD
+from scipy.stats import chi2_contingency
+from typing import Any
+import logging
+import itertools
+
+from .config import (
+    GUARDRAIL_WORSENED_THRESHOLD, 
+    GUARDRAIL_SEVERE_THRESHOLD,
+    MULTIPLE_TESTING_METHOD
+)
 from .continuous_analysis import calculate_continuous_lift
 from .bayesian import calculate_beta_binomial, calculate_continuous_bayes
 
 logger = logging.getLogger("experimentos")
 
 
-def calculate_primary(df: pd.DataFrame) -> Dict:
+def _correct_p_values(p_values: list[float], method: str = MULTIPLE_TESTING_METHOD) -> list[float]:
+    """
+    Apply p-value correction for multiple comparisons.
+    Methods: 'bonferroni', 'holm', 'fdr_bh' (Benjamini-Hochberg), 'none'
+    """
+    if not p_values or method == 'none':
+        return p_values
+    
+    # Use statsmodels if available
+    if multipletests:
+        try:
+            _, pvals_corrected, _, _ = multipletests(p_values, method=method)
+            return list(pvals_corrected.tolist())
+        except Exception as e:
+            logger.warning(f"Statsmodels correction failed ({e}), falling back to manual.")
+    
+    # Manual fallback implementations
+    n = len(p_values)
+    if method == 'bonferroni':
+        return [min(1.0, p * n) for p in p_values]
+    elif method == 'holm':
+        # Holm-Bonferroni
+        # Sort p-values, apply p * (n - rank + 1), enforce monotonicity
+        indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
+        corrected = [0.0] * n
+        for i, (orig_idx, p) in enumerate(indexed_p):
+            rank = i + 1
+            corr_p = min(1.0, p * (n - rank + 1))
+            # Enforce monotonicity (step-down)
+            if i > 0:
+                corr_p = max(corr_p, corrected[indexed_p[i-1][0]])
+            corrected[orig_idx] = corr_p
+        return corrected
+    elif method == 'fdr_bh':
+        # Benjamini-Hochberg
+        # p * n / rank
+        indexed_p = sorted(enumerate(p_values), key=lambda x: x[1])
+        corrected = [0.0] * n
+        # Step-up procedure (start from largest p-value)
+        # Note: Standard BH controls FDR, adjusted p-values are slightly different
+        # Standard definition: p_adj = min(min(p_val * m / rank, 1), p_adj_next)
+        prev_p_adj = 1.0
+        result_map = {}
+        
+        for k in range(n, 0, -1):
+            idx_in_sorted = k - 1
+            orig_idx, p = indexed_p[idx_in_sorted]
+            rank = k
+            p_adj = min(1.0, p * n / rank)
+            p_adj = min(p_adj, prev_p_adj)
+            result_map[orig_idx] = p_adj
+            prev_p_adj = p_adj
+            
+        return [result_map[i] for i in range(n)]
+        
+    return p_values
+
+def analyze_multivariant(df: pd.DataFrame, correction_method: str = MULTIPLE_TESTING_METHOD) -> dict[str, Any]:
+    """
+    Multi-variant Primary Metric Analysis.
+    Performs overall Chi-square test and multiple pairwise Z-tests vs Control.
+    
+    Args:
+        df: DataFrame with 'variant', 'users', 'conversions'.
+            Must contain 'control' variant.
+        correction_method: Method for p-value correction ('bonferroni', 'holm', 'fdr_bh', 'none')
+            
+    Returns:
+        dict: {
+            "overall": { ... },
+            "variants": { 
+                "variant_name": { ..., "p_value_corrected": float } 
+            },
+            "all_pairs": [
+                { "variant_a": str, "variant_b": str, "p_value": float, "p_value_corrected": float, ... }
+            ],
+            "correction_method": str
+        }
+    """
+    results: dict[str, Any] = {
+        "overall": {},
+        "variants": {},
+        "all_pairs": [],
+        "correction_method": correction_method
+    }
+    
+    # 1. Overall Chi-square Test for Independence
+    if len(df) < 2:
+        return results
+
+    try:
+        # Contingency table logic...
+        contingency_table = []
+        variant_names = []
+        
+        for _, row in df.iterrows():
+            conv = int(row["conversions"])
+            users = int(row["users"])
+            non_conv = max(0, users - conv)
+            contingency_table.append([conv, non_conv])
+            variant_names.append(row["variant"])
+            
+        chi2, overall_p, dof, expected = chi2_contingency(contingency_table)
+
+        results["overall"] = {
+            "chi2_stat": chi2,
+            "p_value": float(overall_p),
+            "dof": dof,
+            "is_significant": bool(overall_p < 0.05)
+        }
+        
+    except Exception as e:
+        logger.error(f"Chi-square test failed: {e}")
+        results["overall"] = {"error": str(e), "p_value": 1.0}
+
+    # 2. Pairwise vs Control & Correction
+    control_rows = df[df["variant"] == "control"]
+    
+    # Data collection for pairwise
+    treatments: list[dict[str, Any]] = []
+    
+    if not control_rows.empty:
+        control_row = control_rows.iloc[0]
+        users_c = int(control_row["users"])
+        conv_c = int(control_row["conversions"])
+        rate_c = conv_c / users_c if users_c > 0 else 0.0
+        
+        results["control_stats"] = {
+            "users": users_c,
+            "conversions": conv_c,
+            "rate": rate_c
+        }
+
+        # Calculate vs Control first
+        vs_control_p_values: list[float] = []
+        vs_control_keys: list[str] = []
+        
+        treatment_df = df[df["variant"] != "control"]
+        
+        for _, row in treatment_df.iterrows():
+            v_name = row["variant"]
+            users_t = int(row["users"])
+            conv_t = int(row["conversions"])
+            rate_t = conv_t / users_t if users_t > 0 else 0.0
+            
+            abs_lift = rate_t - rate_c
+            rel_lift = ((rate_t / rate_c) - 1) if rate_c > 0 else None
+            
+            p_val = 1.0
+            ci_lower, ci_upper = 0.0, 0.0
+
+            if users_c > 0 and users_t > 0:
+                try:
+                    counts = np.array([conv_t, conv_c])
+                    nobs = np.array([users_t, users_c])
+                    _, p_val_raw = proportions_ztest(count=counts, nobs=nobs, alternative='two-sided')
+                    p_val = float(p_val_raw)
+                    ci_lower, ci_upper = confint_proportions_2indep(
+                        conv_t, users_t, conv_c, users_c, compare='diff', alpha=0.05, method='agresti-caffo'
+                    )
+                except Exception:
+                    pass
+
+            vs_control_p_values.append(float(p_val))
+            vs_control_keys.append(v_name)
+            
+            results["variants"][v_name] = {
+                "users": users_t,
+                "conversions": conv_t,
+                "rate": rate_t,
+                "absolute_lift": abs_lift,
+                "relative_lift": rel_lift,
+                "ci_95": [ci_lower, ci_upper],
+                "p_value": p_val,
+                # corrected p-value will be updated momentarily
+                "is_significant": p_val < 0.05 
+            }
+            
+        # Apply correction to Comparison vs Control Family
+        corrected_p_vals = _correct_p_values(vs_control_p_values, correction_method)
+        
+        for i, v_name in enumerate(vs_control_keys):
+            p_corr = corrected_p_vals[i]
+            results["variants"][v_name]["p_value_corrected"] = p_corr
+            # Update significance based on corrected p-value? 
+            # Usually significance is p_corr < alpha. Let's provide a specific flag.
+            results["variants"][v_name]["is_significant_corrected"] = p_corr < 0.05
+
+    # 3. All Pairwise Comparisons (Optional Extended Analysis)
+    all_pairs_p_values: list[float] = []
+    all_pairs_meta: list[dict[str, Any]] = []  # Stores pair comparison results
+    
+    # We need a predictable list of variant dicts
+    # Convert df to list of dicts
+    variant_list = []
+    for _, row in df.iterrows():
+        variant_list.append({
+            "name": row["variant"],
+            "users": int(row["users"]),
+            "conversions": int(row["conversions"]),
+            "rate": int(row["conversions"]) / int(row["users"]) if int(row["users"]) > 0 else 0.0
+        })
+        
+    for var_a, var_b in itertools.combinations(variant_list, 2):
+        # Calculate stats A vs B (diff = B - A usually, or directionless)
+        # We'll treat var_a as baseline for 'lift' purposes directionally, but test is symmetric
+        
+        u_a, c_a, r_a = var_a["users"], var_a["conversions"], var_a["rate"]
+        u_b, c_b, r_b = var_b["users"], var_b["conversions"], var_b["rate"]
+        
+        abs_lift = r_b - r_a
+        
+        p_val = 1.0
+        if u_a > 0 and u_b > 0:
+            try:
+                counts = np.array([c_b, c_a])
+                nobs = np.array([u_b, u_a])
+                _, p_val_raw = proportions_ztest(count=counts, nobs=nobs, alternative='two-sided')
+                p_val = float(p_val_raw)
+            except Exception:
+                pass
+                
+        all_pairs_p_values.append(float(p_val))
+        all_pairs_meta.append({
+            "variant_a": var_a["name"],
+            "variant_b": var_b["name"],
+            "absolute_lift": abs_lift,
+            "p_value": p_val
+        })
+        
+    # Apply correction to All Pairs Family
+    all_pairs_corrected = _correct_p_values(all_pairs_p_values, correction_method)
+    
+    for i, meta in enumerate(all_pairs_meta):
+        meta["p_value_corrected"] = all_pairs_corrected[i]
+        meta["is_significant_corrected"] = all_pairs_corrected[i] < 0.05
+        results["all_pairs"].append(meta)
+        
+    return results
+
+
+def calculate_primary(df: pd.DataFrame) -> dict[str, Any]:
     """
     Primary Metric (전환율) 분석
     
@@ -52,14 +304,11 @@ def calculate_primary(df: pd.DataFrame) -> Dict:
     # 2. Lift 계산
     abs_lift = rate_t - rate_c
     
+    # Relative lift: None if control rate is 0 to avoid inf/JSON issues
     if rate_c > 0:
         rel_lift = (rate_t / rate_c) - 1
     else:
-        # Control 전환율이 0인 경우
-        if rate_t > 0:
-            rel_lift = float('inf')
-        else:
-            rel_lift = 0.0
+        rel_lift = None  # Cannot compute meaningful relative lift from zero baseline
             
     # 3. 통계 검정 (Two-proportion z-test)
     # count: 성공 횟수 배열, nobs: 시행 횟수 배열
@@ -115,10 +364,10 @@ def calculate_primary(df: pd.DataFrame) -> Dict:
 
 def calculate_guardrails(
     df: pd.DataFrame,
-    guardrail_columns: Optional[List[str]] = None,
+    guardrail_columns: list[str] | None = None,
     abs_threshold: float = GUARDRAIL_WORSENED_THRESHOLD,
     severe_threshold: float = GUARDRAIL_SEVERE_THRESHOLD
-) -> List[Dict]:
+) -> list[dict[str, Any]]:
     """
     Guardrail 분석
     
@@ -185,8 +434,16 @@ def calculate_guardrails(
                 counts = np.array([count_t, count_c])
                 nobs = np.array([users_t, users_c])
                 _, p_value = proportions_ztest(count=counts, nobs=nobs, alternative='two-sided')
-            except:
+            except (ValueError, ZeroDivisionError) as e:
+                # Handle expected errors (e.g., zero users, invalid counts)
+                logger.warning(f"P-value calculation failed for '{col}': {e}")
                 p_value = 1.0
+            
+            # Relative lift: None if control rate is 0 (consistent with Primary)
+            if rate_c > 0:
+                rel_lift = (rate_t / rate_c) - 1
+            else:
+                rel_lift = None
             
             results.append({
                 "name": col,
@@ -195,25 +452,43 @@ def calculate_guardrails(
                 "control_rate": rate_c,
                 "treatment_rate": rate_t,
                 "delta": delta,
+                "relative_lift": rel_lift,  # Added for schema consistency
                 "worsened": worsened,
                 "severe": severe,
                 "p_value": p_value
             })
         
+        except (ValueError, TypeError, KeyError) as e:
+            # Data structure or type errors - mark as error state
+            logger.warning(f"Guardrail '{col}' 분석 실패 (데이터 오류): {e}")
+            results.append({
+                "name": col,
+                "control_count": 0,
+                "treatment_count": 0,
+                "control_rate": 0.0,
+                "treatment_rate": 0.0,
+                "delta": 0.0,
+                "relative_lift": None,  # Added for schema consistency
+                "worsened": False,
+                "severe": False,
+                "p_value": 1.0,
+                "error": str(e)
+            })
         except Exception as e:
-            logger.warning(f"Guardrail '{col}' 분석 실패: {e}")
-            continue
+            # Unexpected errors - log and re-raise for visibility
+            logger.error(f"Guardrail '{col}' 예상치 못한 오류: {e}")
+            raise
     
     return results
 
 
-def calculate_continuous_metrics(df: pd.DataFrame) -> List[Dict]:
+def calculate_continuous_metrics(df: pd.DataFrame) -> list[dict[str, Any]]:
     """
     Continuous Metric 분석 Orchestrator
     _sum, _sum_sq 컬럼을 탐지하여 분석 수행
     """
-    results = []
-    
+    results: list[dict[str, Any]] = []
+
     # Identify continuous metrics (look for _sum)
     metric_names = [
         col[:-4] for col in df.columns 
@@ -256,13 +531,13 @@ def calculate_continuous_metrics(df: pd.DataFrame) -> List[Dict]:
 
 
 def calculate_bayesian_insights(
-    df: pd.DataFrame, 
-    continuous_results: List[Dict] = None
-) -> Dict:
+    df: pd.DataFrame,
+    continuous_results: list[dict[str, Any]] | None = None
+) -> dict[str, Any]:
     """
     Bayesian 분석 Orchestrator (Informational)
     """
-    insights = {
+    insights: dict[str, Any] = {
         "conversion": None,
         "continuous": {}
     }

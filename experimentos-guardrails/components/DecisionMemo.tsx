@@ -44,8 +44,9 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
             });
 
             setMemo(response);
-        } catch (err: any) {
-            setError(err.response?.data?.detail || 'Failed to generate memo');
+        } catch (err: unknown) {
+            const errObj = err as { response?: { data?: { detail?: string } } };
+            setError(errObj.response?.data?.detail || 'Failed to generate memo');
         } finally {
             setLoading(false);
         }

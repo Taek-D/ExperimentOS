@@ -39,8 +39,16 @@ from src.experimentos.analysis import (
     calculate_bayesian_insights
 )
 from src.experimentos.memo import generate_memo, export_html, make_decision
+# Import integrations to register providers
+import src.experimentos.integrations.statsig
+import src.experimentos.integrations.growthbook
+import src.experimentos.integrations.hackle
+from backend.routers import integrations
 
 app = FastAPI(title="ExperimentOS API")
+
+# Register Integration Router
+app.include_router(integrations.router)
 
 # CORS configuration
 app.add_middleware(
@@ -56,7 +64,7 @@ def read_root():
 
 @app.post("/api/health-check")
 async def api_health_check(file: UploadFile = File(...)):
-    if not file.filename.endswith('.csv'):
+    if not file.filename or not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
     
     try:
@@ -92,13 +100,13 @@ class AnalysisRequest(BaseModel):
 @app.post("/api/analyze")
 async def api_analyze(file: UploadFile = File(...), guardrails: Optional[str] = None):
     # guardrails: comma separated list of columns, or None for auto-detect
-    if not file.filename.endswith('.csv'):
+    if not file.filename or not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
-        
+
     try:
         contents = await file.read()
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
-        
+
         # 1. Primary Analysis
         primary_result = calculate_primary(df)
         
@@ -118,7 +126,7 @@ async def api_analyze(file: UploadFile = File(...), guardrails: Optional[str] = 
 @app.post("/api/continuous-metrics")
 async def api_continuous_metrics(file: UploadFile = File(...)):
     """Analyze continuous metrics using Welch's t-test"""
-    if not file.filename.endswith('.csv'):
+    if not file.filename or not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
     
     try:
@@ -138,7 +146,7 @@ async def api_continuous_metrics(file: UploadFile = File(...)):
 @app.post("/api/bayesian-analysis")
 async def api_bayesian_analysis(file: UploadFile = File(...)):
     """Perform Bayesian analysis (informational only)"""
-    if not file.filename.endswith('.csv'):
+    if not file.filename or not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
     
     try:

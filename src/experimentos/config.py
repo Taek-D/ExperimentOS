@@ -43,6 +43,10 @@ class ExperimentConfig:
     # ===== Small Sample Warning =====
     MIN_SAMPLE_SIZE_WARNING: int = 100
     """작은 표본 경고 기준 (users < 100 → Warning)"""
+    
+    # ===== Multi-variant Settings =====
+    MULTIPLE_TESTING_METHOD: str = "bonferroni"
+    """다중 비교 보정 방법 (bonferroni, holm, fdr_bh, none)"""
 
     # ===== Continuous & Bayesian Settings (V1) =====
     VAR_TOLERANCE: float = 1e-9
@@ -53,6 +57,10 @@ class ExperimentConfig:
     
     BAYES_SEED: int = 42
     """베이지안 시뮬레이션 난수 시드 (Deterministic)"""
+
+    # ===== UI Configuration =====
+    HYPOTHESIS_TEXT_AREA_HEIGHT: int = 100
+    """가설 입력 텍스트 영역 높이 (px)"""
 
     def get_assumptions_text(self) -> str:
         """
@@ -95,3 +103,4 @@ GUARDRAIL_SEVERE_THRESHOLD = config.GUARDRAIL_SEVERE_THRESHOLD
 DEFAULT_EXPECTED_SPLIT = config.DEFAULT_EXPECTED_SPLIT
 SIGNIFICANCE_ALPHA = config.SIGNIFICANCE_ALPHA
 MIN_SAMPLE_SIZE_WARNING = config.MIN_SAMPLE_SIZE_WARNING
+MULTIPLE_TESTING_METHOD = config.MULTIPLE_TESTING_METHOD
