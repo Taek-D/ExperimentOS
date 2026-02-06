@@ -34,6 +34,14 @@ ENV/
 *.log
 logs/
 
+# 디버그/임시 출력
+output.txt
+test_output.txt
+
+# mypy / pytest 캐시
+.mypy_cache/
+.pytest_cache/
+
 # 빌드 산출물
 build/
 dist/

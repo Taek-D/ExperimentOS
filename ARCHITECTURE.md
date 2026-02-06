@@ -1,7 +1,7 @@
 # ExperimentOS Architecture
 
-> This document is the **single source of truth** for ExperimentOS structure, conventions, and extension points.  
-> Last updated: 2026-02-02
+> This document is the **single source of truth** for ExperimentOS structure, conventions, and extension points.
+> Last updated: 2026-02-06
 
 ## 1. Tech Stack
 
@@ -9,18 +9,24 @@
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | **Python** | 3.13+ | Core language (modern type hints, stdlib improvements) |
-| **Streamlit** | 1.29+ | UI framework (multi-page apps, session state, widgets) |
+| **FastAPI** | 0.115+ | Backend API server (REST endpoints, file uploads) |
+| **React** | 19 | Frontend web application |
+| **TypeScript** | 5.8 | Type-safe frontend (strict mode) |
+| **Tailwind CSS** | v4 | Utility-first CSS framework |
+| **Vite** | 6.4+ | Frontend build tool |
+| **Streamlit** | 1.29+ | Local analysis UI (multi-page apps) |
 | **pandas** | 2.2+ | Data manipulation (CSV handling, DataFrame operations) |
 | **numpy** | 2.0+ | Numeric primitives (vectorized math, RNG for simulation) |
-| **scipy** | 1.11+ | Statistical tests (e.g., chi-square for SRM) |
-| **statsmodels** | 0.14+ | Statistical models (two-proportion z-test, confidence intervals, power calcs) |
-| **markdown** | 3.5+ | Markdown → HTML conversion for export |
+| **scipy** | 1.11+ | Statistical tests (chi-square, z-test) |
+| **statsmodels** | 0.14+ | Statistical models (proportions z-test, CIs, power calcs) |
+| **markdown** | 3.5+ | Markdown to HTML conversion for export |
 | **pytest** | 8+ | Unit tests (`pytest -v`) |
 
 ### Why These Choices?
-- **Streamlit**: fastest path to a usable MVP for data-centric apps; multi-page support avoids custom routing.
+- **FastAPI + React**: Production-grade separation of concerns; typed API contracts.
 - **scipy + statsmodels**: battle-tested A/B building blocks (SRM, z-test, CIs, power).
 - **numpy RNG**: deterministic Bayesian simulations in tests via fixed seeds.
+- **TypeScript strict mode**: compile-time safety for union types (2-variant vs multi-variant).
 
 ---
 
@@ -28,102 +34,185 @@
 
 ```
 .
-├── app.py                          # Streamlit entry point, page config, session init
-├── pages/                          # Streamlit multi-page apps (auto-discovered)
-│   ├── 1_Home.py                   # Session state summary, quick start guide
-│   ├── 2_New_Experiment.py         # CSV upload, metadata input, Health Check UI (+ Charter/Power in PR2)
-│   ├── 3_Results.py                # Primary/Guardrail analysis (+ Continuous/Bayesian tabs in PR1)
-│   └── 4_Decision_Memo.py          # Memo generation, MD/HTML export (+ Charter/Bayes summary)
-├── src/experimentos/               # Business logic (stateless & testable; minimal Streamlit imports)
+├── backend/                        # FastAPI API server
+│   ├── main.py                     # Entry point, CORS, variant auto-detection, endpoints
+│   ├── utils.py                    # Utility functions
+│   └── routers/
+│       └── integrations.py         # Integration endpoints (/integrations/{provider}/...)
+│
+├── src/experimentos/               # Business logic (stateless & testable)
 │   ├── __init__.py
-│   ├── config.py                   # Centralized thresholds & numeric tolerances (single source of truth)
+│   ├── config.py                   # Centralized thresholds & numeric tolerances
 │   ├── state.py                    # Session state initialization & helpers
 │   ├── logger.py                   # Centralized logging setup
-│   ├── healthcheck.py              # Schema validation, SRM detection, data-quality status
-│   ├── analysis.py                 # Orchestrator: conversion + guardrails (+ continuous/bayes hooks)
-│   ├── memo.py                     # Decision rules + memo generation + export
-│   ├── continuous_analysis.py      # (PR1) Welch t-test from sufficient statistics
-│   ├── bayesian.py                 # (PR1) Beta-Binomial + continuous posterior simulations
-│   └── power.py                    # (PR2) Sample size / power calculator utilities
-├── tests/                          # Unit tests (pytest)
-├── .tmp/                           # Sample CSV files, temp artifacts
-├── requirements.txt                # Python dependencies (pinned versions)
-└── README.md                       # User-facing docs, quickstart
+│   ├── healthcheck.py              # Schema validation, SRM detection (N-variant)
+│   ├── analysis.py                 # Orchestrator: conversion + guardrails + multi-variant
+│   ├── continuous_analysis.py      # Welch t-test from sufficient statistics
+│   ├── bayesian.py                 # Beta-Binomial + continuous posterior (multi-variant)
+│   ├── power.py                    # Sample size / power calculator utilities
+│   ├── memo.py                     # Decision rules + memo generation (multi-variant)
+│   └── integrations/               # External platform integrations
+│       ├── base.py                 # Base provider interface
+│       ├── registry.py             # Provider registry
+│       ├── schema.py               # Integration schemas
+│       ├── statsig.py              # Statsig provider
+│       ├── growthbook.py           # GrowthBook provider
+│       ├── hackle.py               # Hackle provider
+│       ├── dummy.py                # Dummy provider (testing)
+│       ├── cache.py                # Cache layer
+│       ├── retry.py                # Retry logic
+│       └── transform.py            # Data transformation
+│
+├── experimentos-guardrails/        # React frontend (Vercel)
+│   ├── App.tsx                     # Main app & routing
+│   ├── index.tsx                   # Entry point
+│   ├── api/client.ts              # Axios API client + type definitions
+│   ├── components/                # React components (13)
+│   │   ├── Dashboard.tsx          # Result dashboard (multi-variant branching)
+│   │   ├── MetricsTable.tsx       # Metrics table (corrected P-value column)
+│   │   ├── BayesianInsights.tsx   # Bayesian analysis view (multi-variant)
+│   │   ├── ContinuousMetrics.tsx  # Continuous metrics display
+│   │   ├── DecisionMemo.tsx       # Decision memo generation
+│   │   ├── ExperimentMetadata.tsx # Experiment charter inputs
+│   │   ├── ExperimentSelector.tsx # Integration experiment selector
+│   │   ├── FileUpload.tsx         # CSV file upload
+│   │   ├── Icon.tsx               # Material icon wrapper
+│   │   ├── IntegrationConnect.tsx # Integration connection UI
+│   │   ├── PowerCalculator.tsx    # Power calculator
+│   │   ├── StatsCard.tsx          # Stats summary cards
+│   │   ├── TourOverlay.tsx        # Guided tour overlay
+│   │   └── charts/
+│   │       ├── ForestPlot.tsx     # Forest plot (multi-variant points)
+│   │       └── chartTheme.ts      # Chart colors + VARIANT_COLORS palette
+│   ├── data/demoData.ts           # Demo data (2-variant + multi-variant)
+│   ├── hooks/useTour.ts           # Tour state management hook
+│   ├── vite.config.ts             # Vite config
+│   ├── tsconfig.json              # TypeScript config (strict mode)
+│   └── eslint.config.js           # ESLint config
+│
+├── pages/                          # Streamlit multi-page apps
+│   ├── 1_Home.py
+│   ├── 2_New_Experiment.py
+│   ├── 3_Results.py
+│   └── 4_Decision_Memo.py
+│
+├── tests/                          # Unit tests (152 tests)
+│   ├── test_decision.py            # Decision regression (never break)
+│   ├── test_decision_branches.py   # Decision branching regression
+│   ├── test_analysis.py            # Core analysis tests
+│   ├── test_analysis_multivariant_overall.py  # Multi-variant chi-square
+│   ├── test_multivariant_guardrails.py        # Multi-variant guardrails
+│   ├── test_multivariant_bayesian.py          # Multi-variant Bayesian
+│   ├── test_multivariant_decision.py          # Multi-variant decisions
+│   └── ...                         # healthcheck, bayesian, continuous, power, etc.
+│
+├── app.py                          # Streamlit entry point
+├── generate_demo_csvs.py           # Sample CSV generator
+├── requirements.txt                # Python dependencies
+├── Dockerfile                      # Docker build config
+├── render.yaml                     # Render deployment config
+└── .env.example                    # Environment variables template
 ```
 
 ### Folder Responsibilities
-- **`pages/`**: UI layer only. Read/write `st.session_state`, call `src/experimentos/*`, render widgets/tables.
-- **`src/experimentos/`**: domain logic. Prefer *pure functions* with explicit inputs/outputs.  
-  Exception: `state.py` (session helpers) and `logger.py` (logging setup).
-- **`tests/`**: unit tests + small integration smoke (e.g., decision-regression invariants).
+- **`backend/`**: FastAPI API layer. Variant auto-detection, multi-variant routing, calls `src/experimentos/*`.
+- **`src/experimentos/`**: domain logic. Prefer *pure functions* with explicit inputs/outputs.
+- **`experimentos-guardrails/`**: React frontend. TypeScript union types + type guards for 2-variant / multi-variant branching.
+- **`pages/`**: Streamlit UI layer only. Read/write `st.session_state`, call `src/experimentos/*`.
+- **`tests/`**: unit tests + decision-regression invariants.
 
 ---
 
 ### CSV Schema Contracts (Required / Optional)
 
-ExperimentOS uses **aggregated, 2-variant** experiment summaries. The app expects exactly **one control + one treatment** row per dataset.
+ExperimentOS supports both **2-variant** and **N-variant** (multi-variant) experiment summaries.
+
+#### Variant auto-detection
+- 2 variants with `treatment` name → **2-variant mode** (existing code path)
+- 3+ variants OR no `treatment` name → **Multi-variant mode** (chi-square + pairwise comparisons)
 
 #### Required columns (always)
-- `variant`: `"control"` or `"treatment"`
+- `variant`: variant identifier (`"control"` required; others flexible)
 - `users`: unique users exposed to the variant (non-negative int)
-- `conversions`: number of users who converted (0 ≤ conversions ≤ users)
+- `conversions`: number of users who converted (0 <= conversions <= users)
 
 #### Optional continuous metric columns (sufficient statistics)
 Continuous metrics must be provided as **sufficient statistics** per variant:
-- `metric_sum`: \(\sum x_i\)
-- `metric_sum_sq`: \(\sum x_i^2\)
-- `n`: number of observations used for the metric mean
+- `metric_sum`: sum of values
+- `metric_sum_sq`: sum of squared values
+- `n`: number of observations (defaults to `users`)
 
-Supported column sets (examples):
-- **Per-user revenue / ARPU / Revenue-per-user style**
-  - `revenue_sum`, `revenue_sum_sq`
-  - `n = users` (default)
-- **AOV (per-order)**
-  - `orders` (used as `n` when AOV mode is selected)
-  - `aov_sum`, `aov_sum_sq`
-
-> Notes:
-> - `sum_sq` is required to estimate variance from aggregates:
->   \( s^2 = (\sum x_i^2 - (\sum x_i)^2 / n) / (n-1) \).
-> - Negative sums can be valid (refunds), but `sum_sq` constraints must still hold.
-
-#### Healthcheck validation rules (schema + logic)
-- Basic:
-  - `variant` must contain both `control` and `treatment`
-  - `users > 0` (or explicitly handle `users=0` as Blocked)
-  - `0 ≤ conversions ≤ users`
-- Continuous (when any continuous column set is present):
-  - **Completeness**: if a continuous column exists for one variant, it must exist for the other (**otherwise Blocked**)
-  - **n validity**: `n >= 2` (needed for variance estimate); for per-user metrics use `users`, for AOV use `orders`
-  - **Second moment constraint**: `sum_sq >= (sum^2)/n - tolerance`  
-    where `tolerance` is configured in `config.py` to allow floating-point noise.
-  - **Degenerate variance**: if implied variance ≤ 0 after tolerance handling → `Warning` or `Blocked` (policy in `healthcheck.py`)
+#### Healthcheck validation rules
+- Basic: `variant` must contain `control`, `users > 0`, `0 <= conversions <= users`
+- SRM: chi-square test on user counts vs expected split (supports N-variant uniform split)
+- Continuous: completeness, n >= 2, second moment constraint
 
 ---
 
-### UI Conventions (Streamlit Pages)
+## 3. Multi-Variant Architecture
 
-**Global rule**: Every page must call `initialize_state()` at the top.
+### Data Flow
+```
+CSV Upload (variant auto-detection)
+    ↓
+_is_multivariant(df)  →  True: multi-variant path  /  False: 2-variant path
+    ↓
+healthcheck.py  (SRM with N-variant uniform split)
+    ↓
+analysis.py
+    2-variant: calculate_primary() + calculate_guardrails()
+    N-variant: analyze_multivariant() + calculate_guardrails_multivariant()
+    ↓
+bayesian.py
+    2-variant: calculate_beta_binomial()
+    N-variant: calculate_beta_binomial_multivariant()
+    ↓
+memo.py
+    2-variant: make_decision(primary, guardrails)
+    N-variant: _make_decision_multivariant(primary, guardrails)
+    ↓
+Frontend (TypeScript union types + type guards)
+    isMultiVariantPrimary(r) → MultiVariantPrimaryResult
+    isMultiVariantGuardrails(r) → MultiVariantGuardrailResults
+    isMultiVariantBayesian(r) → MultiVariantBayesianInsights
+```
 
-1) **Navigation guards**
-- If the user hasn’t uploaded valid data, `Results` and `Decision Memo` pages must **not** proceed.
-- Show a friendly `st.info(...)` with a CTA link to `New Experiment`.
+### Multi-Variant Primary Analysis
+- **Overall test**: Chi-square test of independence across all variants
+- **Pairwise comparisons**: Each treatment variant vs control (two-proportion z-test)
+- **P-value correction**: Configurable method (`holm`, `bonferroni`, `fdr_bh`)
+- **Best variant**: Selected by highest significant lift (corrected p-value < alpha)
 
-2) **Status banners**
-- `Healthy / Warning / Blocked` status must be rendered in a consistent “top banner” pattern.
-- Blocked state should include **actionable reasons** (bullet list).
+### Multi-Variant Guardrails
+- Each treatment variant compared independently to control
+- Per-variant worsened/severe flags
+- Summary table: worst variant per guardrail metric
 
-3) **Conditional tabs**
-- If data for a tab isn’t available (e.g., no continuous columns), show an explanation instead of an empty chart/table.
+### Multi-Variant Bayesian
+- P(variant > control) for each treatment variant
+- P(being best) across all variants including control
+- Expected loss per variant
+
+### Frontend Type System
+```typescript
+type PrimaryResultUnion = PrimaryResult | MultiVariantPrimaryResult;
+type GuardrailResultUnion = GuardrailResult[] | MultiVariantGuardrailResults;
+type BayesianInsightsUnion = BayesianInsights | MultiVariantBayesianInsights;
+
+// Type guards for runtime branching
+function isMultiVariantPrimary(r): r is MultiVariantPrimaryResult
+function isMultiVariantGuardrails(r): r is MultiVariantGuardrailResults
+function isMultiVariantBayesian(r): r is MultiVariantBayesianInsights
+```
 
 ---
 
-## 3. Coding Conventions
+## 4. Coding Conventions
 
 ### Formatting
 - **Line length**: 100 characters max
 - **Indentation**: 4 spaces
-- **Imports**: stdlib → third-party → local; sorted alphabetically
+- **Imports**: stdlib -> third-party -> local; sorted alphabetically
 
 ### Naming
 - **Functions/variables**: `snake_case`
@@ -146,78 +235,10 @@ Guidelines:
 ### Error Handling & Status Policy
 - Prefer returning structured status (`Healthy/Warning/Blocked`) over raising exceptions for data issues.
 - Catch specific exceptions; log with context.
-- For numerical issues (division by zero, invalid variance), prefer:
-  - **Blocked** when the input is inconsistent or unusable
-  - **Warning** when usable but potentially misleading
 
 ### Numerical Stability & Randomness
 - Use tolerances from `config.py` (no magic numbers scattered in modules).
-- Clamp near-zero negative values caused by floating-point noise (document the rule in code).
-- Bayesian simulations must:
-  - use `numpy.random.default_rng(seed)`
-  - default `seed` comes from config; tests should fix `seed` to avoid flakes.
-
----
-
-## 4. How to Add New Features
-
-### 4.1 Adding a New Continuous Metric (Aggregated Sufficient Stats)
-
-**Step 1**: Extend CSV schema (add `*_sum`, `*_sum_sq`, and choose `n`)
-```csv
-variant,users,conversions,revenue_sum,revenue_sum_sq
-control,10000,1200,50000,300000000
-treatment,10000,1320,55000,360000000
-```
-
-**Step 2**: Implement metric math in `src/experimentos/continuous_analysis.py`
-- Add/extend `analyze_continuous_from_sufficient_stats(...)` (Welch t-test + CI + lift).
-- Handle edge cases:
-  - `n < 2`
-  - implied variance ≤ 0
-  - `sum_sq < sum^2/n` beyond tolerance
-
-**Step 3**: Wire it in `src/experimentos/analysis.py` (orchestrator)
-- Keep conversion analysis unchanged.
-- If continuous columns are present and healthcheck passes, compute continuous results and attach to the `results` dict.
-
-**Step 4**: UI (`pages/3_Results.py`)
-- Add a **Continuous Analysis** tab that is displayed only when continuous data exists.
-- Follow navigation guards + status banner conventions.
-
-**Step 5**: Tests
-- Add `tests/test_continuous_analysis.py` (Welch calc + edge cases).
-- Add healthcheck tests for continuous schema constraints.
-
----
-
-### 4.2 Adding Bayesian View (Informational Only)
-
-**Goal**: Provide interpretability without changing the decision rules.
-
-- Implement Bayesian utilities in `src/experimentos/bayesian.py`.
-- Render in `pages/3_Results.py` under a **Bayesian View** tab.
-- Add to memo as **two summary lines** only.
-
-**Hard rule**: Bayesian outputs must never affect `make_decision()` inputs or branching.
-
----
-
-### 4.3 Adding Experiment Charter + Power Calculator (Pre-registration)
-
-**Step 1**: Store charter in `st.session_state` via `src/experimentos/state.py`
-- Provide `get_charter()` / `set_charter(...)` helpers.
-
-**Step 2**: Implement sample size calculations in `src/experimentos/power.py`
-- Conversion: `statsmodels` NormalIndPower + `proportion_effectsize`, ratio aware.
-- Continuous: `TTestIndPower`, effect size = mde / std_dev (std_dev must be provided in UI).
-
-**Step 3**: UI (`pages/2_New_Experiment.py`)
-- Always show Charter inputs (fallback to N/A if empty).
-- Show Power Calculator results: required n per group, total n, expected days.
-
-**Step 4**: Memo integration
-- `memo.py` adds a “Pre-registered Charter” section, but decision logic remains unchanged.
+- Bayesian simulations: use `numpy.random.default_rng(seed)`, tests fix seed to avoid flakes.
 
 ---
 
@@ -227,32 +248,25 @@ treatment,10000,1320,55000,360000000
 Each module has a single responsibility and minimal side effects (logging only).
 
 ```
-CSV Upload (UI)
+CSV Upload (UI / API)
     ↓
 healthcheck.py
     → {overall_status: Healthy/Warning/Blocked, issues: [...], srm: {...}}
     ↓
 analysis.py (orchestrator)
-    → {conversion_primary: {...}, guardrails: [...], continuous: {...}?, bayesian: {...}?}
+    → 2-variant: {primary: {...}, guardrails: [...], continuous?: {...}, bayesian?: {...}}
+    → N-variant: {primary: {is_multivariant: true, overall, variants, best_variant}, guardrails: {by_variant, summary}}
     ↓
 memo.py
-    make_decision(health, primary, guardrails)  # Decision rule engine (unchanged)
-    generate_memo(..., optional_bayes_summary, optional_charter)
+    make_decision(health, primary, guardrails)  # Auto-dispatches 2-variant vs N-variant
+    generate_memo(...)
     ↓
 Decision Memo UI (Download MD/HTML)
 ```
 
 ### Core rule: Decision is frequentist/guardrail-driven
 - `make_decision()` uses **healthcheck + frequentist primary + guardrails** only.
-- Bayesian outputs are **explanatory**:
-  - displayed in Results (Bayesian View tab)
-  - summarized in Memo (2 lines)
-  - never used to switch Launch/Hold/Rollback
-
-### Planned/Extended Modules
-- `continuous_analysis.py` (PR1): sufficient-stats continuous tests (Welch t-test).
-- `bayesian.py` (PR1): Beta-Binomial and continuous posterior simulation.
-- `power.py` (PR2): sample size/power computations for chartering.
+- Bayesian outputs are **explanatory**: displayed in Results, summarized in Memo, never used to switch Launch/Hold/Rollback.
 
 ---
 
@@ -260,16 +274,22 @@ Decision Memo UI (Download MD/HTML)
 
 ### Test Layers
 1) **Decision regression (must not change)**
-- Existing PRD acceptance tests and `test_decision.py` must remain stable.
-- Any new feature must not alter decision branching.
+   - `test_decision.py` and `test_decision_branches.py` must remain stable.
+   - Any new feature must not alter decision branching for 2-variant cases.
 
-2) **Unit tests for new math modules**
-- `test_continuous_analysis.py`: Welch + CI + edge cases
-- `test_bayesian.py`: smoke + deterministic seed checks
-- `test_power.py`: monotonicity (effect ↑ ⇒ required_n ↓), ratio smoke
+2) **Multi-variant tests**
+   - `test_multivariant_guardrails.py`: per-variant guardrail calculations
+   - `test_multivariant_bayesian.py`: multi-variant Bayesian analysis
+   - `test_multivariant_decision.py`: multi-variant decision rules (5 cases + memo generation)
+   - `test_analysis_multivariant_overall.py`: chi-square overall test
 
-3) **Healthcheck schema tests**
-- Missing columns, partial variant completeness, continuous constraints (`sum_sq` and `n`) mapped to Warning/Blocked.
+3) **Unit tests for math modules**
+   - `test_continuous_analysis.py`: Welch + CI + edge cases
+   - `test_bayesian.py`: smoke + deterministic seed checks
+   - `test_power.py`: monotonicity, ratio smoke
+
+4) **Healthcheck schema tests**
+   - Missing columns, partial variant completeness, continuous constraints
 
 ### Determinism Rules (for Bayesian tests)
 - Fix RNG seed in config and in tests.
@@ -277,50 +297,53 @@ Decision Memo UI (Download MD/HTML)
 
 ### Running Tests
 ```bash
-python -m pytest tests/ -v
+python -m pytest tests/ -v          # All 152 tests
+python -m pytest tests/test_multivariant_*.py -v  # Multi-variant only
 ```
 
-### Manual UX Smoke (Pre-Release Checklist)
-- [ ] No data → Results/Memo show CTA to upload page
-- [ ] Status banner is visible at top and includes actionable reasons
-- [ ] Continuous/Bayesian tabs are conditional and do not render empty tables
-- [ ] Memo export (MD/HTML) includes Bayes summary / Charter when available
+---
+
+## 7. Extension Points
+
+### Adding a New Variant Analysis Method
+1. Implement in `src/experimentos/analysis.py` (new function)
+2. Wire in `backend/main.py` (add detection + routing)
+3. Add TypeScript types in `api/client.ts` + type guard
+4. Branch UI components using type guard
+5. Add tests (never break existing decision tests)
+
+### Adding a New Integration Provider
+1. Implement `BaseProvider` in `src/experimentos/integrations/`
+2. Register in `registry.py`
+3. Add connection UI in `IntegrationConnect.tsx`
+4. Add tests in `tests/test_integrations.py`
+
+### Adding a New Guardrail Type
+1. Extend `calculate_guardrails()` / `calculate_guardrails_multivariant()` in `analysis.py`
+2. Update guardrail card rendering in `Dashboard.tsx`
+3. Update decision rules if needed in `memo.py`
 
 ---
 
-## 7. Extension Points (V1 Roadmap)
+## 8. Deployment
 
-### Experiment History (Database Integration)
-- Add `src/experimentos/db.py` with SQLite/DuckDB connection
-- Schema: `experiments` table (id, name, date, decision, memo_md)
-- Update `pages/1_Home.py` to show past experiments
-- Add `pages/5_History.py` for detailed view and re-run analysis
-
-### Notion/Confluence Export (Optional)
-- Add `export_notion()` / `export_confluence()` adapters in `memo.py` or `exports/` package.
-
----
-
-## 8. Deployment Considerations
-
-### Running in Production
+### Frontend (Vercel)
 ```bash
-# Local
-streamlit run app.py
+cd experimentos-guardrails
+vercel --prod
+```
 
-# Docker (future)
-docker build -t experimentos .
-docker run -p 8501:8501 experimentos
+### Backend (Render)
+GitHub main branch push triggers auto-deploy. See `render.yaml`.
 
-# Streamlit Cloud
-# Push to GitHub, connect repo in Streamlit Cloud dashboard
+### Docker (Local)
+```bash
+docker build -t experimentos-api .
+docker run -p 8000:8000 experimentos-api
 ```
 
 ### Environment Variables
-```bash
-# Optional: set log level
-export EXPERIMENTOS_LOG_LEVEL=INFO
-```
+See `.env.example` for required configuration.
 
 ---
 
@@ -328,15 +351,14 @@ export EXPERIMENTOS_LOG_LEVEL=INFO
 
 ### Common Issues
 
-**Issue**: `ModuleNotFoundError: No module named 'src'`  
+**Issue**: `ModuleNotFoundError: No module named 'src'`
 **Fix**: Run from project root; ensure `PYTHONPATH` includes project directory.
 
-**Issue**: Streamlit doesn't refresh after code changes  
-**Fix**: Click "Rerun" or enable "Always rerun" in settings.
+**Issue**: TypeScript errors with multi-variant types
+**Fix**: Ensure `noUncheckedIndexedAccess: true` in tsconfig.json. Use type guards before accessing variant-specific properties.
 
-**Issue**: Continuous metric flagged as Blocked due to `sum_sq` constraint  
-**Fix**: Ensure `*_sum_sq` represents \(\sum x^2\) at the observation level and matches `n` (users/orders).  
-Check tolerance in `config.py` and confirm data aggregation pipeline.
-
-**Issue**: Bayesian tests flaky  
+**Issue**: Bayesian tests flaky
 **Fix**: Fix RNG seed and loosen assertions to robust thresholds.
+
+**Issue**: Multi-variant guardrails show empty
+**Fix**: Ensure CSV has guardrail columns (prefixed with `guardrail_` or matching guardrail names).
