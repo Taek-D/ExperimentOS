@@ -33,11 +33,16 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.experimentos.healthcheck import run_health_check
 from src.experimentos.analysis import (
-    calculate_primary, 
+    calculate_primary,
     calculate_guardrails,
     calculate_continuous_metrics,
-    calculate_bayesian_insights
+    calculate_bayesian_insights,
+    analyze_multivariant,
+    calculate_guardrails_multivariant,
+    calculate_continuous_metrics_multivariant,
+    calculate_bayesian_insights_multivariant,
 )
+from src.experimentos.config import MULTIPLE_TESTING_METHOD
 from src.experimentos.memo import generate_memo, export_html, make_decision
 # Import integrations to register providers
 import src.experimentos.integrations.statsig
@@ -46,6 +51,12 @@ import src.experimentos.integrations.hackle
 from backend.routers import integrations
 
 app = FastAPI(title="ExperimentOS API")
+
+
+def _is_multivariant(df: pd.DataFrame) -> bool:
+    """Auto-detect whether the experiment is multi-variant (3+ variants or non-standard names)."""
+    variants = df["variant"].unique()
+    return len(variants) > 2 or "treatment" not in variants
 
 # Register Integration Router
 app.include_router(integrations.router)
@@ -107,17 +118,37 @@ async def api_analyze(file: UploadFile = File(...), guardrails: Optional[str] = 
         contents = await file.read()
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
 
-        # 1. Primary Analysis
-        primary_result = calculate_primary(df)
-        
-        # 2. Guardrails Analysis
         guardrail_cols = guardrails.split(",") if guardrails else None
-        guardrail_results = calculate_guardrails(df, guardrail_columns=guardrail_cols)
-        
+        is_multi = _is_multivariant(df)
+
+        if is_multi:
+            # Multi-variant path
+            primary_result = analyze_multivariant(df, MULTIPLE_TESTING_METHOD)
+            primary_result["is_multivariant"] = True
+
+            # Determine best variant
+            best_variant = None
+            best_lift = -float("inf")
+            for v_name, v_data in primary_result.get("variants", {}).items():
+                if v_data.get("is_significant_corrected") and v_data["absolute_lift"] > best_lift:
+                    best_lift = v_data["absolute_lift"]
+                    best_variant = v_name
+            primary_result["best_variant"] = best_variant
+
+            guardrail_results = calculate_guardrails_multivariant(
+                df, guardrail_columns=guardrail_cols
+            )
+        else:
+            # 2-variant path (기존 코드 그대로)
+            primary_result = calculate_primary(df)
+            guardrail_results = calculate_guardrails(df, guardrail_columns=guardrail_cols)
+
         return sanitize({
             "status": "success",
+            "is_multivariant": is_multi,
+            "variant_count": len(df["variant"].unique()),
             "primary_result": primary_result,
-            "guardrail_results": guardrail_results
+            "guardrail_results": guardrail_results,
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -132,12 +163,18 @@ async def api_continuous_metrics(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
-        
-        continuous_results = calculate_continuous_metrics(df)
-        
+
+        is_multi = _is_multivariant(df)
+
+        if is_multi:
+            continuous_results = calculate_continuous_metrics_multivariant(df)
+        else:
+            continuous_results = calculate_continuous_metrics(df)
+
         return sanitize({
             "status": "success",
-            "continuous_results": continuous_results
+            "is_multivariant": is_multi,
+            "continuous_results": continuous_results,
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -152,14 +189,22 @@ async def api_bayesian_analysis(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         df = pd.read_csv(io.StringIO(contents.decode('utf-8')))
-        
-        # Get continuous results first for Bayesian continuous analysis
-        continuous_results = calculate_continuous_metrics(df)
-        bayesian_insights = calculate_bayesian_insights(df, continuous_results)
-        
+
+        is_multi = _is_multivariant(df)
+
+        if is_multi:
+            continuous_results = calculate_continuous_metrics_multivariant(df)
+            bayesian_insights = calculate_bayesian_insights_multivariant(
+                df, continuous_results
+            )
+        else:
+            continuous_results = calculate_continuous_metrics(df)
+            bayesian_insights = calculate_bayesian_insights(df, continuous_results)
+
         return sanitize({
             "status": "success",
-            "bayesian_insights": bayesian_insights
+            "is_multivariant": is_multi,
+            "bayesian_insights": bayesian_insights,
         })
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -169,7 +214,7 @@ class DecisionMemoRequest(BaseModel):
     experiment_name: str
     health_result: Dict[str, Any]
     primary_result: Dict[str, Any]
-    guardrail_results: List[Dict[str, Any]]
+    guardrail_results: Any  # list[dict] for 2-variant, dict for multi-variant
     bayesian_insights: Optional[Dict[str, Any]] = None
 
 

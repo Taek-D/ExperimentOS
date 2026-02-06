@@ -2,7 +2,14 @@ import React, { useState } from 'react';
 import StatsCard from './StatsCard';
 import MetricsTable from './MetricsTable';
 import ForestPlot from './charts/ForestPlot';
-import { AnalysisResult, HealthCheckResult, ContinuousMetricResult, BayesianInsights } from '../api/client';
+import {
+  AnalysisResult,
+  HealthCheckResult,
+  ContinuousMetricResult,
+  isMultiVariantPrimary,
+  isMultiVariantGuardrails,
+} from '../api/client';
+import type { BayesianInsightsUnion } from '../api/client';
 import { ContinuousMetrics } from './ContinuousMetrics';
 import { BayesianInsightsComponent } from './BayesianInsights';
 
@@ -10,7 +17,7 @@ interface DashboardProps {
   data: AnalysisResult;
   health: HealthCheckResult | null;
   continuousResults?: ContinuousMetricResult[];
-  bayesianInsights?: BayesianInsights | null;
+  bayesianInsights?: BayesianInsightsUnion | null;
 }
 
 type TabType = 'primary' | 'guardrails' | 'continuous' | 'bayesian';
@@ -19,15 +26,47 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
   const [activeTab, setActiveTab] = useState<TabType>('primary');
   const primary = data.primary_result;
   const guardrails = data.guardrail_results;
+  const isMulti = isMultiVariantPrimary(primary);
 
-  // Derive stats
-  const totalGuardrails = guardrails.length;
-  const severeGuardrails = guardrails.filter(g => g.severe).length;
+  // Derive stats based on variant type
+  let liftPercentage: string;
+  let isPositive: boolean;
+  let pValue: string;
+  let isSignificant: boolean;
+  let totalUsers: number;
+  let totalGuardrails: number;
+  let severeGuardrails: number;
+  let bestVariantLabel = '';
 
-  const liftPercentage = (primary.relative_lift * 100).toFixed(2);
-  const isPositive = primary.relative_lift > 0;
-  const pValue = primary.p_value.toFixed(4);
-  const isSignificant = primary.is_significant;
+  if (isMulti) {
+    const best = primary.best_variant;
+    const bestData = best ? primary.variants[best] : undefined;
+    liftPercentage = bestData ? ((bestData.relative_lift ?? 0) * 100).toFixed(2) : '0.00';
+    isPositive = bestData ? bestData.absolute_lift > 0 : false;
+    pValue = primary.overall.p_value.toFixed(4);
+    isSignificant = primary.overall.is_significant;
+    totalUsers = primary.control_stats.users + Object.values(primary.variants).reduce((s, v) => s + v.users, 0);
+    bestVariantLabel = best ? ` (${best})` : '';
+
+    if (isMultiVariantGuardrails(guardrails)) {
+      const allEntries = Object.values(guardrails.by_variant).flat();
+      totalGuardrails = new Set(allEntries.map(g => g.name)).size;
+      severeGuardrails = guardrails.any_severe ? guardrails.summary.filter(s => s.severe).length : 0;
+    } else {
+      totalGuardrails = 0;
+      severeGuardrails = 0;
+    }
+  } else {
+    liftPercentage = (primary.relative_lift * 100).toFixed(2);
+    isPositive = primary.relative_lift > 0;
+    pValue = primary.p_value.toFixed(4);
+    isSignificant = primary.is_significant;
+    totalUsers = primary.control.users + primary.treatment.users;
+
+    const grList = Array.isArray(guardrails) ? guardrails : [];
+    totalGuardrails = grList.length;
+    severeGuardrails = grList.filter(g => g.severe).length;
+  }
 
   const tabs = [
     { id: 'primary' as TabType, label: 'Primary', icon: '📊' },
@@ -46,20 +85,25 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
               <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold font-mono bg-primary/20 text-primary uppercase border border-primary/20 tracking-wider backdrop-blur-sm shadow-glow-primary">
                 Analysis Complete
               </span>
+              {isMulti && (
+                <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold font-mono bg-purple-500/20 text-purple-400 uppercase border border-purple-500/20 tracking-wider">
+                  Multi-Variant ({data.variant_count ?? Object.keys((primary as typeof primary & { variants: Record<string, unknown> }).variants).length + 1})
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-3 text-white/60 text-sm font-mono mt-1">
               <span className="hover:text-white transition-colors cursor-pointer bg-white/5 px-2 py-0.5 rounded border border-white/5">
                 {health?.filename || "data.csv"}
               </span>
               <span className="w-1 h-1 rounded-full bg-white/30"></span>
-              <span>N={primary.control.users + primary.treatment.users}</span>
+              <span>N={totalUsers.toLocaleString()}</span>
             </div>
           </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="stats-cards">
           <StatsCard
-            title="Primary Lift"
+            title={`Primary Lift${bestVariantLabel}`}
             value={`${isPositive ? '+' : ''}${liftPercentage}%`}
             icon={isPositive ? "trending_up" : "trending_down"}
             subValue={
@@ -69,7 +113,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
             }
           />
           <StatsCard
-            title="P-Value"
+            title={isMulti ? "Overall P-Value" : "P-Value"}
             value={pValue}
             icon="query_stats"
             subValue={<span className="text-primary text-xs font-mono font-medium mb-1">95% CI</span>}
@@ -118,46 +162,27 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
           {activeTab === 'primary' && (
             <div className="space-y-6">
               <MetricsTable data={data} />
-              <ForestPlot primary={primary} guardrails={guardrails} />
+              {!isMulti && <ForestPlot primary={primary} guardrails={Array.isArray(guardrails) ? guardrails : []} />}
+              {isMulti && <ForestPlot primary={primary} guardrails={[]} />}
             </div>
           )}
           {activeTab === 'guardrails' && (
             <div className="space-y-4">
               <h3 className="text-xl font-semibold text-white mb-4">Guardrail Metrics</h3>
-              {guardrails.length === 0 ? (
-                <div className="text-center py-12 text-white/50"><p>No guardrails specified</p></div>
+              {isMulti && isMultiVariantGuardrails(guardrails) ? (
+                <MultiVariantGuardrailView guardrails={guardrails} />
               ) : (
-                <div className="space-y-3">
-                  {guardrails.map((g, idx) => (
-                    <div key={idx} className="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl">
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-lg font-semibold text-white">{g.name}</h4>
-                        <span className={`px-3 py-1 rounded-lg text-sm font-medium ${g.severe ? 'bg-danger/20 text-danger border border-danger/30' :
-                            g.worsened ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
-                              'bg-primary/20 text-primary border border-primary/30'
-                          }`}>
-                          {g.severe ? '🚫 Severe' : g.worsened ? '⚠️ Worsened' : '✅ OK'}
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-4">
-                        <div>
-                          <div className="text-white/50 text-xs mb-1">Control</div>
-                          <div className="text-white text-lg font-medium">{(g.control_rate * 100).toFixed(2)}%</div>
-                        </div>
-                        <div>
-                          <div className="text-white/50 text-xs mb-1">Treatment</div>
-                          <div className="text-white text-lg font-medium">{(g.treatment_rate * 100).toFixed(2)}%</div>
-                        </div>
-                        <div>
-                          <div className="text-white/50 text-xs mb-1">Delta</div>
-                          <div className={`text-lg font-medium ${g.delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                            {(g.delta * 100).toFixed(2)}%
-                          </div>
-                        </div>
-                      </div>
+                <>
+                  {Array.isArray(guardrails) && guardrails.length === 0 ? (
+                    <div className="text-center py-12 text-white/50"><p>No guardrails specified</p></div>
+                  ) : (
+                    <div className="space-y-3">
+                      {Array.isArray(guardrails) && guardrails.map((g, idx) => (
+                        <GuardrailCard key={idx} g={g} />
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -166,6 +191,123 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
         </div>
       </div>
     </>
+  );
+};
+
+// Guardrail card for 2-variant
+interface GuardrailCardProps {
+  g: { name: string; control_rate: number; treatment_rate: number; delta: number; severe: boolean; worsened: boolean };
+}
+
+const GuardrailCard: React.FC<GuardrailCardProps> = ({ g }) => (
+  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl">
+    <div className="flex items-center justify-between mb-4">
+      <h4 className="text-lg font-semibold text-white">{g.name}</h4>
+      <span className={`px-3 py-1 rounded-lg text-sm font-medium ${g.severe ? 'bg-danger/20 text-danger border border-danger/30' :
+          g.worsened ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+            'bg-primary/20 text-primary border border-primary/30'
+        }`}>
+        {g.severe ? '🚫 Severe' : g.worsened ? '⚠️ Worsened' : '✅ OK'}
+      </span>
+    </div>
+    <div className="grid grid-cols-3 gap-4">
+      <div>
+        <div className="text-white/50 text-xs mb-1">Control</div>
+        <div className="text-white text-lg font-medium">{(g.control_rate * 100).toFixed(2)}%</div>
+      </div>
+      <div>
+        <div className="text-white/50 text-xs mb-1">Treatment</div>
+        <div className="text-white text-lg font-medium">{(g.treatment_rate * 100).toFixed(2)}%</div>
+      </div>
+      <div>
+        <div className="text-white/50 text-xs mb-1">Delta</div>
+        <div className={`text-lg font-medium ${g.delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+          {(g.delta * 100).toFixed(2)}%
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+// Multi-variant guardrail view
+import type { MultiVariantGuardrailResults } from '../api/client';
+
+const VARIANT_COLORS = ['#6366f1', '#34d399', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6'];
+
+const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailResults }> = ({ guardrails }) => {
+  const variantNames = Object.keys(guardrails.by_variant);
+
+  return (
+    <div className="space-y-6">
+      {/* Summary */}
+      {guardrails.summary.length > 0 && (
+        <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+          <h4 className="text-sm font-semibold text-white/70 mb-3 uppercase tracking-wider">Summary</h4>
+          <div className="space-y-2">
+            {guardrails.summary.map((s, i) => (
+              <div key={i} className="flex items-center justify-between text-sm">
+                <span className="text-white">{s.name}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-white/50 font-mono">worst: {s.worst_variant}</span>
+                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                    s.severe ? 'bg-danger/20 text-danger' : s.worsened ? 'bg-orange-500/20 text-orange-400' : 'bg-primary/20 text-primary'
+                  }`}>
+                    {s.severe ? 'Severe' : s.worsened ? 'Worsened' : 'OK'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Per-variant tables */}
+      {variantNames.map((vName, vi) => {
+        const entries = guardrails.by_variant[vName];
+        if (!entries) return null;
+        const color = VARIANT_COLORS[vi % VARIANT_COLORS.length];
+        return (
+          <div key={vName} className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+            <div className="flex items-center gap-2 mb-3">
+              <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
+              <h4 className="text-sm font-semibold text-white uppercase tracking-wider">{vName} vs Control</h4>
+            </div>
+            <div className="overflow-auto">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="text-white/40 text-[11px] font-mono uppercase tracking-widest">
+                    <th className="p-2">Metric</th>
+                    <th className="p-2 text-right">Control</th>
+                    <th className="p-2 text-right">Treatment</th>
+                    <th className="p-2 text-right">Delta</th>
+                    <th className="p-2 text-right">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {entries.map((g, gi) => (
+                    <tr key={gi} className="border-t border-white/5">
+                      <td className="p-2 text-white">{g.name}</td>
+                      <td className="p-2 text-right text-white/50 font-mono">{(g.control_rate * 100).toFixed(2)}%</td>
+                      <td className="p-2 text-right text-white/90 font-mono">{(g.treatment_rate * 100).toFixed(2)}%</td>
+                      <td className={`p-2 text-right font-mono ${g.delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {(g.delta * 100).toFixed(3)}pp
+                      </td>
+                      <td className="p-2 text-right">
+                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                          g.severe ? 'bg-danger/20 text-danger' : g.worsened ? 'bg-orange-500/20 text-orange-400' : 'bg-primary/20 text-primary'
+                        }`}>
+                          {g.severe ? 'Severe' : g.worsened ? 'Worsened' : 'OK'}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 };
 

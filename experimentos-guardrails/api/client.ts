@@ -64,10 +64,117 @@ export interface HealthCheckResult {
     filename: string;
 }
 
+// Multi-variant types
+export interface MultiVariantStats {
+    users: number;
+    conversions: number;
+    rate: number;
+    absolute_lift: number;
+    relative_lift: number | null;
+    ci_95: [number, number];
+    p_value: number;
+    p_value_corrected: number;
+    is_significant: boolean;
+    is_significant_corrected: boolean;
+}
+
+export interface OverallTest {
+    chi2_stat: number;
+    p_value: number;
+    dof: number;
+    is_significant: boolean;
+}
+
+export interface MultiVariantPrimaryResult {
+    is_multivariant: true;
+    overall: OverallTest;
+    control_stats: VariantStats;
+    variants: Record<string, MultiVariantStats>;
+    correction_method: string;
+    best_variant: string | null;
+    all_pairs: Array<{
+        variant_a: string;
+        variant_b: string;
+        absolute_lift: number;
+        p_value: number;
+        p_value_corrected: number;
+        is_significant_corrected: boolean;
+    }>;
+}
+
+export type PrimaryResultUnion = PrimaryResult | MultiVariantPrimaryResult;
+
+export interface MultiVariantGuardrailEntry {
+    name: string;
+    variant: string;
+    control_count: number;
+    treatment_count: number;
+    control_rate: number;
+    treatment_rate: number;
+    delta: number;
+    relative_lift: number | null;
+    worsened: boolean;
+    severe: boolean;
+    p_value: number;
+    error?: string;
+}
+
+export interface MultiVariantGuardrailResults {
+    by_variant: Record<string, MultiVariantGuardrailEntry[]>;
+    any_severe: boolean;
+    any_worsened: boolean;
+    summary: Array<{
+        name: string;
+        worst_variant: string;
+        worst_delta: number;
+        severe: boolean;
+        worsened: boolean;
+    }>;
+}
+
+export type GuardrailResultUnion = GuardrailResult[] | MultiVariantGuardrailResults;
+
+// Type guards
+export function isMultiVariantPrimary(r: PrimaryResultUnion): r is MultiVariantPrimaryResult {
+    return 'is_multivariant' in r && r.is_multivariant === true;
+}
+
+export function isMultiVariantGuardrails(r: GuardrailResultUnion): r is MultiVariantGuardrailResults {
+    return !Array.isArray(r) && 'by_variant' in r;
+}
+
+// Multi-variant Bayesian types
+export interface MultiVariantBayesianInsights {
+    conversion: {
+        vs_control: Record<string, {
+            prob_beats_control: number;
+            expected_loss: number;
+            posterior: { alpha: number; beta: number };
+        }>;
+        prob_being_best: Record<string, number>;
+        control_posterior: { alpha: number; beta: number };
+    } | null;
+    continuous: {
+        by_variant: Record<string, Record<string, {
+            prob_treatment_beats_control: number;
+            expected_loss?: number;
+        }>>;
+    };
+}
+
+export type BayesianInsightsUnion = BayesianInsights | MultiVariantBayesianInsights;
+
+export function isMultiVariantBayesian(r: BayesianInsightsUnion): r is MultiVariantBayesianInsights {
+    if (!r || !r.conversion) return false;
+    return 'vs_control' in r.conversion;
+}
+
 export interface AnalysisResult {
     status: string;
-    primary_result: PrimaryResult;
-    guardrail_results: GuardrailResult[];
+    is_multivariant?: boolean;
+    variant_count?: number;
+    primary_result: PrimaryResultUnion;
+    guardrail_results: GuardrailResultUnion;
 }
 
 export interface ContinuousMetricResult {
@@ -142,9 +249,9 @@ export const analyzeBayesian = async (file: File): Promise<{ status: string; bay
 export const generateDecisionMemo = async (data: {
     experiment_name: string;
     health_result: HealthCheckResult['result'];
-    primary_result: PrimaryResult;
-    guardrail_results: GuardrailResult[];
-    bayesian_insights?: BayesianInsights;
+    primary_result: PrimaryResultUnion;
+    guardrail_results: GuardrailResultUnion;
+    bayesian_insights?: BayesianInsightsUnion;
 }): Promise<DecisionMemoResponse> => {
     const response = await apiClient.post('/decision-memo', data, {
         headers: { 'Content-Type': 'application/json' }

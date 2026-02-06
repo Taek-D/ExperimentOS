@@ -43,6 +43,67 @@ def calculate_beta_binomial(
         "treatment_posterior": {"alpha": alpha_t, "beta": beta_t}
     }
 
+def calculate_beta_binomial_multivariant(
+    control_conversions: int,
+    control_total: int,
+    treatments: list[dict],
+) -> dict:
+    """
+    Multi-variant Beta-Binomial Bayesian analysis.
+
+    Calculates P(variant > control) for each variant, and P(being best) across all variants.
+
+    Args:
+        control_conversions: Control group conversions
+        control_total: Control group total users
+        treatments: List of {"name": str, "conversions": int, "total": int}
+
+    Returns:
+        dict: {
+            "vs_control": {"variant_a": {"prob_beats_control": float, "expected_loss": float}},
+            "prob_being_best": {"control": float, "variant_a": float, ...}
+        }
+    """
+    rng = np.random.default_rng(config.BAYES_SEED)
+
+    alpha_c = 1 + control_conversions
+    beta_c = 1 + control_total - control_conversions
+    samples_c = rng.beta(alpha_c, beta_c, size=config.BAYES_SAMPLES)
+
+    vs_control: dict[str, dict] = {}
+    all_samples: dict[str, np.ndarray] = {"control": samples_c}
+
+    for t in treatments:
+        name = t["name"]
+        alpha_t = 1 + t["conversions"]
+        beta_t = 1 + t["total"] - t["conversions"]
+        samples_t = rng.beta(alpha_t, beta_t, size=config.BAYES_SAMPLES)
+        all_samples[name] = samples_t
+
+        prob_beats = float(np.mean(samples_t > samples_c))
+        exp_loss = float(np.mean(np.maximum(samples_c - samples_t, 0)))
+
+        vs_control[name] = {
+            "prob_beats_control": prob_beats,
+            "expected_loss": exp_loss,
+            "posterior": {"alpha": alpha_t, "beta": beta_t},
+        }
+
+    # P(being best) for each variant including control
+    variant_names = list(all_samples.keys())
+    stacked = np.stack([all_samples[n] for n in variant_names], axis=0)  # (K, N)
+    best_indices = np.argmax(stacked, axis=0)  # (N,)
+    prob_being_best: dict[str, float] = {}
+    for i, name in enumerate(variant_names):
+        prob_being_best[name] = float(np.mean(best_indices == i))
+
+    return {
+        "vs_control": vs_control,
+        "prob_being_best": prob_being_best,
+        "control_posterior": {"alpha": alpha_c, "beta": beta_c},
+    }
+
+
 def calculate_continuous_bayes(
     control_stats: Dict,
     treatment_stats: Dict

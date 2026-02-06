@@ -23,7 +23,11 @@ from .config import (
     MULTIPLE_TESTING_METHOD
 )
 from .continuous_analysis import calculate_continuous_lift
-from .bayesian import calculate_beta_binomial, calculate_continuous_bayes
+from .bayesian import (
+    calculate_beta_binomial,
+    calculate_continuous_bayes,
+    calculate_beta_binomial_multivariant,
+)
 
 logger = logging.getLogger("experimentos")
 
@@ -528,6 +532,277 @@ def calculate_continuous_metrics(df: pd.DataFrame) -> list[dict[str, Any]]:
             results.append(result)
             
     return results
+
+
+def calculate_guardrails_multivariant(
+    df: pd.DataFrame,
+    guardrail_columns: list[str] | None = None,
+    abs_threshold: float = GUARDRAIL_WORSENED_THRESHOLD,
+    severe_threshold: float = GUARDRAIL_SEVERE_THRESHOLD,
+) -> dict[str, Any]:
+    """
+    Multi-variant Guardrail 분석.
+
+    각 treatment variant를 control과 비교하여 guardrail 악화 여부를 평가합니다.
+
+    Returns:
+        dict: {
+            "by_variant": { "variant_a": [{guardrail results}], ... },
+            "any_severe": bool,
+            "any_worsened": bool,
+            "summary": [{"name": str, "worst_variant": str, "worst_delta": float, "severe": bool, "worsened": bool}]
+        }
+    """
+    # Guardrail 컬럼 자동 탐지
+    if guardrail_columns is None:
+        required_cols = {"variant", "users", "conversions", "metric_sum", "metric_sum_sq", "n"}
+        guardrail_columns = [
+            col for col in df.columns
+            if col not in required_cols
+            and not col.endswith("_sum")
+            and not col.endswith("_sum_sq")
+        ]
+
+    result: dict[str, Any] = {
+        "by_variant": {},
+        "any_severe": False,
+        "any_worsened": False,
+        "summary": [],
+    }
+
+    if not guardrail_columns:
+        return result
+
+    control_rows = df[df["variant"] == "control"]
+    if control_rows.empty:
+        return result
+
+    control_row = control_rows.iloc[0]
+    users_c = int(control_row["users"])
+    treatment_df = df[df["variant"] != "control"]
+
+    # Track worst delta per guardrail for summary
+    guardrail_worst: dict[str, dict[str, Any]] = {}
+
+    for _, t_row in treatment_df.iterrows():
+        v_name = str(t_row["variant"])
+        users_t = int(t_row["users"])
+        variant_guardrails: list[dict[str, Any]] = []
+
+        for col in guardrail_columns:
+            try:
+                count_c = int(control_row[col])
+                count_t = int(t_row[col])
+
+                rate_c = count_c / users_c if users_c > 0 else 0.0
+                rate_t = count_t / users_t if users_t > 0 else 0.0
+                delta = rate_t - rate_c
+
+                worsened = delta >= abs_threshold
+                severe = delta >= severe_threshold
+
+                try:
+                    counts = np.array([count_t, count_c])
+                    nobs = np.array([users_t, users_c])
+                    _, p_value = proportions_ztest(count=counts, nobs=nobs, alternative="two-sided")
+                except (ValueError, ZeroDivisionError):
+                    p_value = 1.0
+
+                rel_lift = (rate_t / rate_c) - 1 if rate_c > 0 else None
+
+                g_result = {
+                    "name": col,
+                    "variant": v_name,
+                    "control_count": count_c,
+                    "treatment_count": count_t,
+                    "control_rate": rate_c,
+                    "treatment_rate": rate_t,
+                    "delta": delta,
+                    "relative_lift": rel_lift,
+                    "worsened": worsened,
+                    "severe": severe,
+                    "p_value": float(p_value),
+                }
+                variant_guardrails.append(g_result)
+
+                if severe:
+                    result["any_severe"] = True
+                if worsened:
+                    result["any_worsened"] = True
+
+                # Track worst delta per guardrail metric
+                if col not in guardrail_worst or delta > guardrail_worst[col]["worst_delta"]:
+                    guardrail_worst[col] = {
+                        "name": col,
+                        "worst_variant": v_name,
+                        "worst_delta": delta,
+                        "severe": severe,
+                        "worsened": worsened,
+                    }
+                else:
+                    # Update flags if any variant is worse
+                    if severe:
+                        guardrail_worst[col]["severe"] = True
+                    if worsened:
+                        guardrail_worst[col]["worsened"] = True
+
+            except (ValueError, TypeError, KeyError) as e:
+                logger.warning(f"Guardrail '{col}' 분석 실패 for {v_name}: {e}")
+                variant_guardrails.append({
+                    "name": col,
+                    "variant": v_name,
+                    "control_count": 0,
+                    "treatment_count": 0,
+                    "control_rate": 0.0,
+                    "treatment_rate": 0.0,
+                    "delta": 0.0,
+                    "relative_lift": None,
+                    "worsened": False,
+                    "severe": False,
+                    "p_value": 1.0,
+                    "error": str(e),
+                })
+
+        result["by_variant"][v_name] = variant_guardrails
+
+    result["summary"] = list(guardrail_worst.values())
+    return result
+
+
+def calculate_continuous_metrics_multivariant(df: pd.DataFrame) -> dict[str, Any]:
+    """
+    Multi-variant Continuous Metric 분석.
+
+    각 variant vs control에 대해 Welch t-test를 수행합니다.
+
+    Returns:
+        dict: {"by_variant": {"variant_a": [metric results], ...}}
+    """
+    results: dict[str, Any] = {"by_variant": {}}
+
+    # Identify continuous metrics (look for _sum)
+    metric_names = [
+        col[:-4] for col in df.columns
+        if col.endswith("_sum") and col != "metric_sum"
+    ]
+
+    if not metric_names:
+        return results
+
+    control_rows = df[df["variant"] == "control"]
+    if control_rows.empty:
+        return results
+
+    control_row = control_rows.iloc[0]
+    treatment_df = df[df["variant"] != "control"]
+
+    for _, t_row in treatment_df.iterrows():
+        v_name = str(t_row["variant"])
+        variant_metrics: list[dict[str, Any]] = []
+
+        for metric in metric_names:
+            sum_col = f"{metric}_sum"
+            sum_sq_col = f"{metric}_sum_sq"
+
+            n_c = int(control_row["users"])
+            n_t = int(t_row["users"])
+
+            control_stats = {
+                "sum": float(control_row[sum_col]),
+                "sum_sq": float(control_row[sum_sq_col]),
+                "n": n_c,
+            }
+            treatment_stats = {
+                "sum": float(t_row[sum_col]),
+                "sum_sq": float(t_row[sum_sq_col]),
+                "n": n_t,
+            }
+
+            result = calculate_continuous_lift(control_stats, treatment_stats, metric)
+            if result["is_valid"]:
+                result["variant"] = v_name
+                variant_metrics.append(result)
+
+        results["by_variant"][v_name] = variant_metrics
+
+    return results
+
+
+def calculate_bayesian_insights_multivariant(
+    df: pd.DataFrame,
+    continuous_results: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """
+    Multi-variant Bayesian 분석 Orchestrator (Informational).
+
+    Returns:
+        dict: {
+            "conversion": {
+                "vs_control": {"variant_a": {prob, expected_loss}, ...},
+                "prob_being_best": {"control": float, "variant_a": float, ...}
+            },
+            "continuous": {"by_variant": {...}}
+        }
+    """
+    insights: dict[str, Any] = {"conversion": None, "continuous": {"by_variant": {}}}
+
+    control_rows = df[df["variant"] == "control"]
+    if control_rows.empty:
+        return insights
+
+    control_row = control_rows.iloc[0]
+    treatment_df = df[df["variant"] != "control"]
+
+    # 1. Conversion (Beta-Binomial multi-variant)
+    treatments: list[dict[str, Any]] = []
+    for _, t_row in treatment_df.iterrows():
+        treatments.append({
+            "name": str(t_row["variant"]),
+            "conversions": int(t_row["conversions"]),
+            "total": int(t_row["users"]),
+        })
+
+    try:
+        insights["conversion"] = calculate_beta_binomial_multivariant(
+            control_conversions=int(control_row["conversions"]),
+            control_total=int(control_row["users"]),
+            treatments=treatments,
+        )
+    except Exception as e:
+        logger.warning(f"Multi-variant Bayesian conversion failed: {e}")
+
+    # 2. Continuous Metrics per variant
+    if continuous_results and continuous_results.get("by_variant"):
+        for v_name, metrics in continuous_results["by_variant"].items():
+            variant_bayes: dict[str, Any] = {}
+            for res in metrics:
+                metric = res["metric_name"]
+                sum_col = f"{metric}_sum"
+                sum_sq_col = f"{metric}_sum_sq"
+
+                t_rows = df[df["variant"] == v_name]
+                if t_rows.empty:
+                    continue
+                t_row = t_rows.iloc[0]
+
+                try:
+                    c_stats = {
+                        "sum": float(control_row[sum_col]),
+                        "sum_sq": float(control_row[sum_sq_col]),
+                        "n": int(control_row["users"]),
+                    }
+                    t_stats = {
+                        "sum": float(t_row[sum_col]),
+                        "sum_sq": float(t_row[sum_sq_col]),
+                        "n": int(t_row["users"]),
+                    }
+                    variant_bayes[metric] = calculate_continuous_bayes(c_stats, t_stats)
+                except Exception as e:
+                    logger.warning(f"Bayesian continuous failed for {metric}/{v_name}: {e}")
+
+            insights["continuous"]["by_variant"][v_name] = variant_bayes
+
+    return insights
 
 
 def calculate_bayesian_insights(

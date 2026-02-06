@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Dashboard from './components/Dashboard';
 import { uploadHealthCheck, analyzeData, analyzeContinuousMetrics, analyzeBayesian, analyzeExperiment } from './api/client';
-import type { HealthCheckResult, AnalysisResult, ContinuousMetricResult, BayesianInsights } from './api/client';
+import type { HealthCheckResult, AnalysisResult, ContinuousMetricResult, BayesianInsightsUnion } from './api/client';
 import { FileUpload } from './components/FileUpload';
 import { ExperimentMetadata } from './components/ExperimentMetadata';
 import { DecisionMemo } from './components/DecisionMemo';
@@ -10,7 +10,7 @@ import { IntegrationConnect } from './components/IntegrationConnect';
 import { ExperimentSelector } from './components/ExperimentSelector';
 import TourOverlay from './components/TourOverlay';
 import { useTour } from './hooks/useTour';
-import { DEMO_HEALTH_RESULT, DEMO_ANALYSIS_RESULT, DEMO_BAYESIAN_INSIGHTS } from './data/demoData';
+import { DEMO_HEALTH_RESULT, DEMO_ANALYSIS_RESULT, DEMO_BAYESIAN_INSIGHTS, DEMO_MULTIVARIANT_HEALTH, DEMO_MULTIVARIANT_ANALYSIS, DEMO_MULTIVARIANT_BAYESIAN } from './data/demoData';
 
 type PageType = 'analysis' | 'memo' | 'calculator';
 
@@ -22,7 +22,7 @@ const App: React.FC = () => {
   const [healthResult, setHealthResult] = useState<HealthCheckResult | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [continuousResults, setContinuousResults] = useState<ContinuousMetricResult[]>([]);
-  const [bayesianInsights, setBayesianInsights] = useState<BayesianInsights | null>(null);
+  const [bayesianInsights, setBayesianInsights] = useState<BayesianInsightsUnion | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   // Integration State
@@ -83,6 +83,18 @@ const App: React.FC = () => {
     setBayesianInsights(DEMO_BAYESIAN_INSIGHTS);
     setContinuousResults([]);
     setExperimentName('Demo: Homepage Banner Test');
+    setError(null);
+    setSelectedFile(null);
+    setIsAutoSync(false);
+    setActiveExperimentId(null);
+  }, []);
+
+  const handleLoadMultiVariantDemo = useCallback(() => {
+    setHealthResult(DEMO_MULTIVARIANT_HEALTH);
+    setAnalysisResult(DEMO_MULTIVARIANT_ANALYSIS);
+    setBayesianInsights(DEMO_MULTIVARIANT_BAYESIAN);
+    setContinuousResults([]);
+    setExperimentName('Demo: Multi-Variant Banner Test');
     setError(null);
     setSelectedFile(null);
     setIsAutoSync(false);
@@ -283,13 +295,19 @@ const App: React.FC = () => {
 
                   <FileUpload onFileSelect={handleFileSelect} isUploading={loading} />
 
-                  {/* Try Demo button */}
-                  <div className="flex justify-center" data-tour="try-demo">
+                  {/* Try Demo buttons */}
+                  <div className="flex justify-center gap-3" data-tour="try-demo">
                     <button
                       onClick={handleLoadDemo}
                       className="px-5 py-2.5 text-sm font-medium text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all"
                     >
                       Try Demo Data
+                    </button>
+                    <button
+                      onClick={handleLoadMultiVariantDemo}
+                      className="px-5 py-2.5 text-sm font-medium text-purple-400/70 hover:text-purple-300 bg-purple-500/5 hover:bg-purple-500/10 border border-purple-500/10 hover:border-purple-500/20 rounded-xl transition-all"
+                    >
+                      Try Multi-Variant Demo
                     </button>
                   </div>
                 </div>

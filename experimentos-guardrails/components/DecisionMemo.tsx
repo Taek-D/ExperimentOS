@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { DecisionMemoResponse, generateDecisionMemo, HealthCheckResult, AnalysisResult, BayesianInsights } from '../api/client';
+import { DecisionMemoResponse, generateDecisionMemo, HealthCheckResult, AnalysisResult } from '../api/client';
+import type { BayesianInsightsUnion } from '../api/client';
 import Icon from './Icon';
 
 interface DecisionMemoProps {
     experimentName: string;
     health: HealthCheckResult | null;
     analysisResult: AnalysisResult | null;
-    bayesianInsights: BayesianInsights | null;
+    bayesianInsights: BayesianInsightsUnion | null;
 }
 
 export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, health, analysisResult, bayesianInsights }) => {

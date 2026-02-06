@@ -10,11 +10,12 @@ import {
   Tooltip,
   ErrorBar,
 } from 'recharts';
-import type { PrimaryResult, GuardrailResult } from '../../api/client';
-import { CHART_COLORS, DARK_AXIS_PROPS } from './chartTheme';
+import type { PrimaryResultUnion, GuardrailResult } from '../../api/client';
+import { isMultiVariantPrimary } from '../../api/client';
+import { CHART_COLORS, VARIANT_COLORS, DARK_AXIS_PROPS } from './chartTheme';
 
 interface ForestPlotProps {
-  primary: PrimaryResult;
+  primary: PrimaryResultUnion;
   guardrails: GuardrailResult[];
 }
 
@@ -30,32 +31,56 @@ interface PlotPoint {
   status: string;
 }
 
-function buildPoints(primary: PrimaryResult, guardrails: GuardrailResult[]): PlotPoint[] {
+function buildPoints(primary: PrimaryResultUnion, guardrails: GuardrailResult[]): PlotPoint[] {
   const points: PlotPoint[] = [];
   let yIndex = 0;
 
-  // Primary metric
-  const ciLow = primary.ci_95[0];
-  const ciHigh = primary.ci_95[1];
-  const effect = primary.absolute_lift;
+  if (isMultiVariantPrimary(primary)) {
+    // Multi-variant: one point per variant
+    const variantEntries = Object.entries(primary.variants);
+    variantEntries.forEach(([vName, vData], i) => {
+      const ciLow = vData.ci_95[0];
+      const ciHigh = vData.ci_95[1];
+      const effect = vData.absolute_lift;
+      const isBest = vName === primary.best_variant;
+      const color = VARIANT_COLORS[i % VARIANT_COLORS.length] ?? CHART_COLORS.primary;
 
-  points.push({
-    name: 'Primary (Conversion)',
-    y: yIndex,
-    effect,
-    ciLow,
-    ciHigh,
-    errorMinus: effect - ciLow,
-    errorPlus: ciHigh - effect,
-    color: primary.is_significant ? CHART_COLORS.primary : CHART_COLORS.neutral,
-    status: primary.is_significant ? 'Significant' : 'Not Significant',
-  });
+      points.push({
+        name: `${vName}${isBest ? ' ★' : ''}`,
+        y: yIndex,
+        effect,
+        ciLow,
+        ciHigh,
+        errorMinus: effect - ciLow,
+        errorPlus: ciHigh - effect,
+        color: vData.is_significant_corrected ? color : CHART_COLORS.neutral,
+        status: vData.is_significant_corrected ? 'Significant (corrected)' : 'Not Significant',
+      });
+      yIndex += 1;
+    });
+  } else {
+    // 2-variant: original logic
+    const ciLow = primary.ci_95[0];
+    const ciHigh = primary.ci_95[1];
+    const effect = primary.absolute_lift;
 
-  // Guardrail metrics
-  for (const g of guardrails) {
+    points.push({
+      name: 'Primary (Conversion)',
+      y: yIndex,
+      effect,
+      ciLow,
+      ciHigh,
+      errorMinus: effect - ciLow,
+      errorPlus: ciHigh - effect,
+      color: primary.is_significant ? CHART_COLORS.primary : CHART_COLORS.neutral,
+      status: primary.is_significant ? 'Significant' : 'Not Significant',
+    });
     yIndex += 1;
+  }
+
+  // Guardrail metrics (2-variant only passes these)
+  for (const g of guardrails) {
     const delta = g.delta;
-    // Guardrails don't have CI from the API, so we show the point only
     points.push({
       name: g.name,
       y: yIndex,
@@ -67,6 +92,7 @@ function buildPoints(primary: PrimaryResult, guardrails: GuardrailResult[]): Plo
       color: g.severe ? CHART_COLORS.danger : g.worsened ? CHART_COLORS.warning : CHART_COLORS.treatment,
       status: g.severe ? 'Severe' : g.worsened ? 'Worsened' : 'OK',
     });
+    yIndex += 1;
   }
 
   return points;

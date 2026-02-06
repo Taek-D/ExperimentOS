@@ -14,6 +14,18 @@ export const CHART_COLORS = {
   powerThreshold: '#fbbf24',
 } as const;
 
+/** Extended palette for multi-variant charts */
+export const VARIANT_COLORS = [
+  '#6366f1', // indigo-500
+  '#34d399', // emerald-400
+  '#f59e0b', // amber-500
+  '#ec4899', // pink-500
+  '#06b6d4', // cyan-500
+  '#8b5cf6', // violet-500
+  '#f97316', // orange-500
+  '#14b8a6', // teal-500
+] as const;
+
 export const CHART_FONT = {
   family: 'ui-monospace, SFMono-Regular, monospace',
   size: 11,
