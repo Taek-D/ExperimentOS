@@ -74,7 +74,7 @@ const GlossaryTerm: React.FC<GlossaryTermProps> = ({ termKey, children }) => {
           onMouseEnter={cancelHide}
           onMouseLeave={hide}
         >
-          <div className="bg-slate-900 border border-white/20 rounded-xl p-4 shadow-2xl shadow-black/50">
+          <div className="bg-surface-2 border border-white/[0.08] rounded-xl p-4 shadow-2xl shadow-black/50">
             <div className="text-xs font-bold text-primary uppercase tracking-wider mb-1">
               {entry.term}
             </div>

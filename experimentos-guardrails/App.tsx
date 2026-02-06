@@ -10,9 +10,16 @@ import { IntegrationConnect } from './components/IntegrationConnect';
 import { ExperimentSelector } from './components/ExperimentSelector';
 import TourOverlay from './components/TourOverlay';
 import { useTour } from './hooks/useTour';
+import Icon from './components/Icon';
 import { DEMO_HEALTH_RESULT, DEMO_ANALYSIS_RESULT, DEMO_BAYESIAN_INSIGHTS, DEMO_MULTIVARIANT_HEALTH, DEMO_MULTIVARIANT_ANALYSIS, DEMO_MULTIVARIANT_BAYESIAN } from './data/demoData';
 
 type PageType = 'analysis' | 'memo' | 'calculator';
+
+const NAV_ITEMS: { id: PageType; label: string; icon: string }[] = [
+  { id: 'analysis', label: 'Analysis', icon: 'analytics' },
+  { id: 'memo', label: 'Memo', icon: 'description' },
+  { id: 'calculator', label: 'Calculator', icon: 'calculate' },
+];
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<PageType>('analysis');
@@ -41,7 +48,6 @@ const App: React.FC = () => {
     };
     checkConnection();
 
-    // Simple way to listen to localStorage changes from IntegrationConnect
     const interval = setInterval(checkConnection, 1000);
     return () => clearInterval(interval);
   }, []);
@@ -60,16 +66,15 @@ const App: React.FC = () => {
         const result = await analyzeExperiment(provider, activeExperimentId);
         setAnalysisResult(result);
         setExperimentName(result.experiment_id || 'Experiment');
-        // Clear file upload specific usage if switching to integration
         setSelectedFile(null);
-        setHealthResult(null); // Clear health result as it's not from CSV
+        setHealthResult(null);
       } catch (err) {
         console.warn('Auto-sync failed', err);
       }
     };
 
     if (isAutoSync && activeExperimentId && !loading) {
-      intervalId = setInterval(performSync, 30000); // 30 seconds
+      intervalId = setInterval(performSync, 30000);
     }
 
     return () => {
@@ -108,7 +113,6 @@ const App: React.FC = () => {
   }, [handleLoadDemo]);
 
   const handleFileSelect = async (file: File) => {
-    // Disable auto-sync if manual file upload happens
     setIsAutoSync(false);
     setActiveExperimentId(null);
 
@@ -116,7 +120,6 @@ const App: React.FC = () => {
     setError(null);
     setSelectedFile(file);
     try {
-      // 1. Health Check
       const health = await uploadHealthCheck(file);
       setHealthResult(health);
 
@@ -126,11 +129,9 @@ const App: React.FC = () => {
         return;
       }
 
-      // 2. Auto Analyze (for MVP)
       const analysis = await analyzeData(file);
       setAnalysisResult(analysis);
 
-      // 3. Continuous Metrics (optional)
       try {
         const continuous = await analyzeContinuousMetrics(file);
         setContinuousResults(continuous.continuous_results || []);
@@ -138,7 +139,6 @@ const App: React.FC = () => {
         console.warn('Continuous metrics failed:', err);
       }
 
-      // 4. Bayesian Analysis (optional)
       try {
         const bayesian = await analyzeBayesian(file);
         setBayesianInsights(bayesian.bayesian_insights);
@@ -168,7 +168,6 @@ const App: React.FC = () => {
       const result = await analyzeExperiment(provider, experimentId);
       setAnalysisResult(result);
       setExperimentName(result.experiment_id || 'Experiment');
-      // Integration results don't have health check reports usually
       setHealthResult(null);
       setContinuousResults([]);
       setBayesianInsights(null);
@@ -176,7 +175,7 @@ const App: React.FC = () => {
       console.error(err);
       const errObj = err as { response?: { data?: { detail?: string } } };
       setError(errObj.response?.data?.detail || "Failed to analyze experiment");
-      setIsAutoSync(false); // Stop sync on error
+      setIsAutoSync(false);
     } finally {
       setLoading(false);
     }
@@ -195,158 +194,187 @@ const App: React.FC = () => {
     setIsAutoSync(false);
   };
 
+  const hasResults = !!analysisResult;
+
   return (
-    <div className="min-h-screen bg-app-bg text-white font-body">
-      <main className="py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Navigation */}
-          {analysisResult && (
-            <div className="sticky top-0 z-50 bg-app-bg/95 backdrop-blur-sm pb-4 mb-2" data-tour="nav-tabs">
-              <div className="flex gap-2 sm:gap-3 overflow-x-auto">
-                <button
-                  onClick={() => setCurrentPage('analysis')}
-                  className={`focus-ring px-3 sm:px-4 py-2 rounded-xl font-medium transition-all text-sm sm:text-base shrink-0 ${currentPage === 'analysis'
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                    : 'bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
-                >
-                  Analysis
-                </button>
-                <button
-                  onClick={() => setCurrentPage('memo')}
-                  className={`focus-ring px-3 sm:px-4 py-2 rounded-xl font-medium transition-all text-sm sm:text-base shrink-0 ${currentPage === 'memo'
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                    : 'bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
-                >
-                  Memo
-                </button>
-                <button
-                  onClick={() => setCurrentPage('calculator')}
-                  className={`focus-ring px-3 sm:px-4 py-2 rounded-xl font-medium transition-all text-sm sm:text-base shrink-0 ${currentPage === 'calculator'
-                    ? 'bg-primary text-white shadow-lg shadow-primary/20'
-                    : 'bg-white/5 text-white/70 hover:bg-white/10'
-                    }`}
-                >
-                  Calculator
-                </button>
+    <div className="h-screen flex flex-col bg-app-bg text-white font-body overflow-hidden">
+      {/* Top bar */}
+      <header className="flex items-center justify-between h-14 px-5 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl shrink-0 z-30">
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={handleReset}>
+          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+            <Icon name="science" className="text-primary" size={18} />
+          </div>
+          <span className="text-[15px] font-bold tracking-tight text-white group-hover:text-primary transition-colors">
+            ExperimentOS
+          </span>
+          <span className="hidden sm:inline text-[10px] font-mono text-white/25 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.04]">
+            v2.4
+          </span>
+        </div>
 
-                {isAutoSync && (
-                  <span className="flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-lg text-sm border border-green-500/20 ml-2 animate-pulse shrink-0">
-                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
-                    Live Sync
-                  </span>
-                )}
+        {hasResults && (
+          <nav className="flex items-center gap-1" data-tour="nav-tabs">
+            {NAV_ITEMS.map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setCurrentPage(item.id)}
+                className={`focus-ring flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
+                  currentPage === item.id
+                    ? 'bg-primary/15 text-primary'
+                    : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
+                }`}
+              >
+                <Icon name={item.icon} size={16} className={currentPage === item.id ? 'text-primary' : 'text-white/40'} />
+                <span className="hidden sm:inline">{item.label}</span>
+              </button>
+            ))}
 
-                <button
-                  onClick={handleReset}
-                  className="focus-ring ml-auto px-3 sm:px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-all shrink-0"
-                >
-                  Reset
-                </button>
-              </div>
-            </div>
+            {isAutoSync && (
+              <span className="flex items-center gap-1.5 px-2.5 py-1 bg-primary/10 text-primary rounded-lg text-xs font-medium border border-primary/15 ml-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse-dot" />
+                Live
+              </span>
+            )}
+          </nav>
+        )}
+
+        <div className="flex items-center gap-2">
+          {hasResults && (
+            <button
+              onClick={handleReset}
+              className="focus-ring flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/[0.04] transition-all"
+            >
+              <Icon name="restart_alt" size={16} />
+              <span className="hidden sm:inline">New</span>
+            </button>
           )}
+        </div>
+      </header>
 
-          {!analysisResult && (
-            <div data-tour="experiment-metadata">
-              <ExperimentMetadata onMetadataChange={({ name }) => setExperimentName(name)} />
-            </div>
-          )}
+      {/* Main content area */}
+      <main className="flex-1 overflow-hidden">
+        {!hasResults ? (
+          /* ── Landing / Upload State ── */
+          <div className="h-full overflow-y-auto custom-scrollbar">
+            <div className="max-w-2xl mx-auto px-5 py-12 flex flex-col items-center gap-8">
 
-          {/* Main Content */}
-          <div className="mt-8">
-            {!analysisResult ? (
-              <div className="w-full max-w-2xl mx-auto flex flex-col items-center justify-center gap-8">
-                <div className="text-center space-y-2">
-                  <h1 className="text-3xl font-bold tracking-tight">New Experiment</h1>
-                  <p className="text-gray-400">Import data from an integration or upload a CSV.</p>
+              {/* Hero */}
+              <div className="text-center space-y-3" data-tour="experiment-metadata">
+                <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/15 text-primary text-xs font-medium mb-2">
+                  <Icon name="science" size={14} />
+                  A/B Test Decision Engine
                 </div>
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+                  New Experiment
+                </h1>
+                <p className="text-white/40 text-sm max-w-md mx-auto leading-relaxed">
+                  Import data from an integration or upload a CSV to get started with your analysis.
+                </p>
+              </div>
 
-                {/* Welcome banner for first-time visitors */}
-                {!tour.hasSeenTour && !tour.isActive && (
-                  <div className="w-full p-4 rounded-xl bg-primary/10 border border-primary/30 text-center animate-in fade-in slide-in-from-bottom-2">
-                    <p className="text-white font-medium mb-2">First time here?</p>
-                    <p className="text-white/60 text-sm mb-3">Take a quick tour to learn how ExperimentOS works.</p>
+              {/* Experiment metadata */}
+              <div className="w-full">
+                <ExperimentMetadata onMetadataChange={({ name }) => setExperimentName(name)} />
+              </div>
+
+              {/* Welcome banner for first-time visitors */}
+              {!tour.hasSeenTour && !tour.isActive && (
+                <div className="w-full glass-card p-5 text-center">
+                  <p className="text-white font-medium mb-1.5">First time here?</p>
+                  <p className="text-white/40 text-sm mb-4">Take a quick tour to learn how ExperimentOS works.</p>
+                  <div className="flex items-center justify-center gap-3">
                     <button
                       onClick={tour.startTour}
-                      className="px-4 py-2 bg-primary hover:bg-primary/80 text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-primary/20"
+                      className="btn-primary text-sm"
                     >
                       Start Tour
                     </button>
-                  </div>
-                )}
-
-                <div className="w-full space-y-8">
-                  <IntegrationConnect />
-
-                  {isConnected && (
-                    <ExperimentSelector onSelectExperiment={handleIntegrationSelect} isLoading={loading} />
-                  )}
-
-                  <div className="relative">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t border-white/10" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-app-bg px-2 text-gray-500">Or upload file</span>
-                    </div>
-                  </div>
-
-                  <FileUpload onFileSelect={handleFileSelect} isUploading={loading} />
-
-                  {/* Try Demo buttons */}
-                  <div className="flex justify-center gap-3" data-tour="try-demo">
                     <button
-                      onClick={handleLoadDemo}
-                      className="px-5 py-2.5 text-sm font-medium text-white/70 hover:text-white bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 rounded-xl transition-all"
+                      onClick={tour.skipTour}
+                      className="btn-ghost text-sm"
                     >
-                      Try Demo Data
-                    </button>
-                    <button
-                      onClick={handleLoadMultiVariantDemo}
-                      className="px-5 py-2.5 text-sm font-medium text-purple-400/70 hover:text-purple-300 bg-purple-500/5 hover:bg-purple-500/10 border border-purple-500/10 hover:border-purple-500/20 rounded-xl transition-all"
-                    >
-                      Try Multi-Variant Demo
+                      Skip
                     </button>
                   </div>
                 </div>
+              )}
 
-                {error && (
-                  <div className="p-4 rounded-lg bg-danger/10 border border-danger/30 text-danger w-full text-center animate-in fade-in slide-in-from-bottom-2">
-                    {error}
-                  </div>
+              {/* Integration */}
+              <div className="w-full space-y-6">
+                <IntegrationConnect />
+
+                {isConnected && (
+                  <ExperimentSelector onSelectExperiment={handleIntegrationSelect} isLoading={loading} />
                 )}
 
-                {healthResult && !analysisResult && !error && (
-                  <div className="p-4 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-400 w-full text-center">
-                    Health Check Passed! Analyzing...
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-white/[0.06]" />
                   </div>
-                )}
+                  <div className="relative flex justify-center">
+                    <span className="bg-app-bg px-3 text-[11px] font-mono uppercase tracking-widest text-white/25">
+                      Or upload file
+                    </span>
+                  </div>
+                </div>
+
+                <FileUpload onFileSelect={handleFileSelect} isUploading={loading} />
+
+                {/* Try Demo buttons */}
+                <div className="flex flex-col sm:flex-row justify-center gap-3" data-tour="try-demo">
+                  <button
+                    onClick={handleLoadDemo}
+                    className="btn-ghost text-sm flex items-center justify-center gap-2"
+                  >
+                    <Icon name="play_circle" size={16} className="text-white/40" />
+                    Try Demo Data
+                  </button>
+                  <button
+                    onClick={handleLoadMultiVariantDemo}
+                    className="px-4 py-2 text-sm font-medium text-purple-400/80 hover:text-purple-300 bg-purple-500/[0.06] hover:bg-purple-500/10 border border-purple-500/10 hover:border-purple-500/20 rounded-xl transition-all flex items-center justify-center gap-2"
+                  >
+                    <Icon name="hub" size={16} className="text-purple-400/60" />
+                    Multi-Variant Demo
+                  </button>
+                </div>
               </div>
-            ) : (
-              <>
-                {currentPage === 'analysis' && (
-                  <Dashboard
-                    data={analysisResult}
-                    health={healthResult}
-                    continuousResults={continuousResults}
-                    bayesianInsights={bayesianInsights}
-                  />
-                )}
-                {currentPage === 'memo' && (
-                  <DecisionMemo
-                    experimentName={experimentName}
-                    health={healthResult}
-                    analysisResult={analysisResult}
-                    bayesianInsights={bayesianInsights}
-                  />
-                )}
-                {currentPage === 'calculator' && <PowerCalculator />}
-              </>
-            )}
+
+              {error && (
+                <div className="w-full p-4 rounded-xl bg-danger/10 border border-danger/20 text-danger text-sm text-center">
+                  {error}
+                </div>
+              )}
+
+              {healthResult && !analysisResult && !error && (
+                <div className="w-full p-4 rounded-xl bg-info/10 border border-info/20 text-info text-sm text-center flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-info/30 border-t-info rounded-full animate-spin" />
+                  Health Check Passed. Analyzing...
+                </div>
+              )}
+            </div>
           </div>
-        </div>
+        ) : (
+          /* ── Results State ── */
+          <div className="h-full overflow-y-auto custom-scrollbar">
+            {currentPage === 'analysis' && (
+              <Dashboard
+                data={analysisResult}
+                health={healthResult}
+                continuousResults={continuousResults}
+                bayesianInsights={bayesianInsights}
+              />
+            )}
+            {currentPage === 'memo' && (
+              <DecisionMemo
+                experimentName={experimentName}
+                health={healthResult}
+                analysisResult={analysisResult}
+                bayesianInsights={bayesianInsights}
+              />
+            )}
+            {currentPage === 'calculator' && <PowerCalculator />}
+          </div>
+        )}
       </main>
 
       {/* Tour Overlay */}

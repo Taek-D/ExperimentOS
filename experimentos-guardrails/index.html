@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ExperimentOS Guardrails</title>
+    <title>ExperimentOS</title>
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -15,8 +15,6 @@
       href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap"
       rel="stylesheet"
     />
-    <!-- Tailwind CSS -->
-    <!-- Removed CDN in favor of local installation -->
     <style>
       .material-symbols-outlined {
         font-variation-settings: "FILL" 1, "wght" 400, "GRAD" 0, "opsz" 24;
@@ -24,25 +22,24 @@
         vertical-align: middle;
         line-height: 1;
       }
-      /* Custom scrollbar */
       ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
+        width: 6px;
+        height: 6px;
       }
       ::-webkit-scrollbar-track {
-        background: #11211c;
+        background: transparent;
       }
       ::-webkit-scrollbar-thumb {
-        background: #346555;
-        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.12);
+        border-radius: 3px;
       }
       ::-webkit-scrollbar-thumb:hover {
-        background: #4a8b76;
+        background: rgba(255, 255, 255, 0.25);
       }
       body {
         margin: 0;
         padding: 0;
-        background-color: #11211c;
+        background-color: #0a0f0d;
       }
     </style>
   <script type="importmap">
@@ -56,7 +53,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-background-dark text-slate-900 dark:text-white font-display overflow-hidden selection:bg-primary selection:text-background-dark">
+  <body class="bg-app-bg text-white font-body overflow-hidden selection:bg-primary/30 selection:text-white">
     <div id="root"></div>
   <script type="module" src="/index.tsx"></script>
 </body>

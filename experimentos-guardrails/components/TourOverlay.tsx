@@ -201,7 +201,7 @@ const TourOverlay: React.FC<TourOverlayProps> = ({
       {/* Tooltip card */}
       <div
         style={tooltipStyle()}
-        className="bg-slate-900 border border-primary/30 rounded-2xl p-6 shadow-2xl shadow-black/50 max-w-[380px] animate-in fade-in slide-in-from-bottom-2 duration-300"
+        className="bg-surface-2 border border-primary/30 rounded-2xl p-6 shadow-2xl shadow-black/50 max-w-[380px] animate-in fade-in slide-in-from-bottom-2 duration-300"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Step indicator */}

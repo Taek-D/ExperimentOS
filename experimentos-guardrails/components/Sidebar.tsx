@@ -7,7 +7,7 @@ interface SidebarProps {
 
 const Sidebar: React.FC<SidebarProps> = ({ onReset }) => {
   return (
-    <aside className="hidden lg:flex w-72 flex-col justify-between border-r border-white/5 bg-background-dark/50 backdrop-blur-xl p-5 shrink-0 z-20 relative">
+    <aside className="hidden lg:flex w-72 flex-col justify-between border-r border-white/[0.06] bg-surface-0/50 backdrop-blur-xl p-5 shrink-0 z-20 relative">
       <div className="flex flex-col gap-10">
         {/* Logo Area */}
         <div className="flex flex-col px-2 pt-2 cursor-pointer" onClick={onReset}>
@@ -75,7 +75,7 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, onClick }) => 
       href="#"
       onClick={(e) => { e.preventDefault(); onClick?.(); }}
       className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive
-        ? 'bg-primary text-background-dark font-bold shadow-lg shadow-primary/20'
+        ? 'bg-primary text-app-bg font-bold shadow-lg shadow-primary/20'
         : 'hover:bg-white/5 text-white/60 hover:text-white'
         }`}
     >
@@ -83,12 +83,12 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, onClick }) => 
       <Icon
         name={icon}
         size={20}
-        className={isActive ? 'text-background-dark' : 'text-white/40 group-hover:text-primary transition-colors'}
+        className={isActive ? 'text-app-bg' : 'text-white/40 group-hover:text-primary transition-colors'}
       />
       <p className="text-sm z-10">
         {label}
       </p>
-      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-background-dark"></div>}
+      {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-app-bg"></div>}
     </a>
   );
 };

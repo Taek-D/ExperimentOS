@@ -1,4 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
@@ -12,6 +13,7 @@ from typing import List, Dict, Any, Optional
 
 class NumpyEncoder(json.JSONEncoder):
     """JSON encoder that handles numpy types."""
+
     def default(self, obj):
         if isinstance(obj, np.integer):
             return int(obj)
@@ -24,9 +26,30 @@ class NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
+class SafeJSONResponse(JSONResponse):
+    """JSONResponse that safely handles NaN/Inf and numpy types.
+
+    Two-pass approach:
+      1) json.dumps with allow_nan=True + NumpyEncoder -> produces string with NaN tokens
+      2) json.loads with parse_constant -> converts NaN/Infinity to None
+      3) json.dumps again -> clean, RFC-compliant JSON
+    """
+
+    def render(self, content: Any) -> bytes:
+        text = json.dumps(
+            content, cls=NumpyEncoder, allow_nan=True,
+            ensure_ascii=False, separators=(",", ":"),
+        )
+        clean = json.loads(text, parse_constant=lambda _: None)
+        return json.dumps(
+            clean, ensure_ascii=False, separators=(",", ":"),
+        ).encode("utf-8")
+
+
 def sanitize(obj):
     """Convert numpy types to native Python types for JSON serialization."""
-    return json.loads(json.dumps(obj, cls=NumpyEncoder))
+    text = json.dumps(obj, cls=NumpyEncoder, allow_nan=True)
+    return json.loads(text, parse_constant=lambda _: None)
 
 # Add src to sys.path to import existing logic
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -50,7 +73,7 @@ import src.experimentos.integrations.growthbook
 import src.experimentos.integrations.hackle
 from backend.routers import integrations
 
-app = FastAPI(title="ExperimentOS API")
+app = FastAPI(title="ExperimentOS API", default_response_class=SafeJSONResponse)
 
 
 def _is_multivariant(df: pd.DataFrame) -> bool:

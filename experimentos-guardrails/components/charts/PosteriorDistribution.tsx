@@ -35,8 +35,8 @@ const CustomTooltip: React.FC<{
 }> = ({ active, payload, label }) => {
   if (!active || !payload || label == null) return null;
   return (
-    <div className="bg-slate-900/95 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono backdrop-blur-sm">
-      <div className="text-white/70 mb-1">Rate: {(label * 100).toFixed(2)}%</div>
+    <div className="bg-surface-1/95 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono backdrop-blur-md">
+      <div className="text-white/50 mb-1">Rate: {(label * 100).toFixed(2)}%</div>
       {payload.map((entry) => (
         <div key={entry.dataKey} style={{ color: entry.color }}>
           {entry.dataKey === 'control' ? 'Control' : 'Treatment'}: {entry.value.toFixed(2)}
@@ -54,13 +54,11 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
     const controlCurve = generateBetaCurve(control.alpha, control.beta);
     const treatmentCurve = generateBetaCurve(treatment.alpha, treatment.beta);
 
-    // Merge onto a common x-axis (union of both x values)
     const xSet = new Set<number>();
     for (const p of controlCurve) xSet.add(p.x);
     for (const p of treatmentCurve) xSet.add(p.x);
     const xs = Array.from(xSet).sort((a, b) => a - b);
 
-    // Build lookup maps
     const cMap = new Map(controlCurve.map((p) => [p.x, p.y]));
     const tMap = new Map(treatmentCurve.map((p) => [p.x, p.y]));
 
@@ -72,14 +70,14 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
   }, [control.alpha, control.beta, treatment.alpha, treatment.beta]);
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-lg font-semibold text-white mb-1">Posterior Distribution</h3>
-      <p className="text-white/50 text-xs mb-4 font-mono">
+    <div className="glass-card p-5">
+      <h3 className="text-base font-semibold text-white mb-0.5">Posterior Distribution</h3>
+      <p className="text-white/30 text-[10px] mb-4 font-mono uppercase tracking-wider">
         Beta posteriors: Control (blue) vs Treatment (green)
       </p>
       <div className="overflow-x-auto -mx-2 px-2">
         <div style={{ minWidth: '480px' }}>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={280}>
         <AreaChart
           data={data}
           margin={{ top: 10, right: 20, bottom: 10, left: 10 }}
@@ -96,7 +94,7 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
               position: 'insideBottomRight',
               offset: -5,
               fill: CHART_COLORS.axis,
-              fontSize: 10,
+              fontSize: 9,
               fontFamily: 'monospace',
             }}
           />
@@ -108,13 +106,13 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
               position: 'insideLeft',
               offset: 10,
               fill: CHART_COLORS.axis,
-              fontSize: 10,
+              fontSize: 9,
               fontFamily: 'monospace',
             }}
           />
           <Tooltip content={<CustomTooltip />} />
           <Legend
-            wrapperStyle={{ color: CHART_COLORS.axis, fontSize: 11, fontFamily: 'monospace' }}
+            wrapperStyle={{ color: CHART_COLORS.axis, fontSize: 10, fontFamily: 'monospace' }}
           />
           <Area
             type="monotone"
@@ -122,7 +120,7 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
             name="Control"
             stroke={CHART_COLORS.control}
             fill={CHART_COLORS.control}
-            fillOpacity={0.25}
+            fillOpacity={0.2}
             strokeWidth={2}
             dot={false}
             isAnimationActive={false}
@@ -133,7 +131,7 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
             name="Treatment"
             stroke={CHART_COLORS.treatment}
             fill={CHART_COLORS.treatment}
-            fillOpacity={0.25}
+            fillOpacity={0.2}
             strokeWidth={2}
             dot={false}
             isAnimationActive={false}

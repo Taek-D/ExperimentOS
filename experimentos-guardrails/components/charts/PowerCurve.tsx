@@ -14,10 +14,10 @@ import { CHART_COLORS, DARK_AXIS_PROPS } from './chartTheme';
 import { generatePowerCurve, powerForSampleSize } from './chartUtils';
 
 interface PowerCurveProps {
-  baselineRate: number;    // e.g. 0.10 for 10%
-  mdeRelative: number;     // e.g. 0.10 for 10% relative lift
-  alpha?: number;          // significance level, default 0.05
-  currentN?: number;       // current sample size per variation (optional marker)
+  baselineRate: number;
+  mdeRelative: number;
+  alpha?: number;
+  currentN?: number;
 }
 
 const CustomTooltip: React.FC<{
@@ -27,9 +27,9 @@ const CustomTooltip: React.FC<{
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-slate-900/95 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono backdrop-blur-sm">
-      <div className="text-white/70">Sample size: <span className="text-white">{d.n.toLocaleString()}</span></div>
-      <div className="text-white/70">Power: <span className="text-white">{(d.power * 100).toFixed(1)}%</span></div>
+    <div className="bg-surface-1/95 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono backdrop-blur-md">
+      <div className="text-white/50">Sample size: <span className="text-white">{d.n.toLocaleString()}</span></div>
+      <div className="text-white/50">Power: <span className="text-white">{(d.power * 100).toFixed(1)}%</span></div>
     </div>
   );
 };
@@ -42,22 +42,21 @@ const PowerCurve: React.FC<PowerCurveProps> = ({
 }) => {
   const curveData = generatePowerCurve(baselineRate, mdeRelative, alpha, currentN);
 
-  // Current point marker data
   const markerData = currentN != null
     ? [{ n: currentN, power: powerForSampleSize(currentN, baselineRate, mdeRelative, alpha) }]
     : [];
 
   return (
-    <div className="glass-card p-6">
-      <h3 className="text-lg font-semibold text-white mb-1">Power Curve</h3>
-      <p className="text-white/50 text-xs mb-4 font-mono">
-        Sample size vs statistical power (1-&beta;)
+    <div className="glass-card p-5">
+      <h3 className="text-base font-semibold text-white mb-0.5">Power Curve</h3>
+      <p className="text-white/30 text-[10px] mb-4 font-mono uppercase tracking-wider">
+        Sample size vs statistical power (1-beta)
       </p>
       <div className="overflow-x-auto -mx-2 px-2">
         <div style={{ minWidth: '480px' }}>
-      <ResponsiveContainer width="100%" height={300}>
+      <ResponsiveContainer width="100%" height={280}>
         <ComposedChart
-          margin={{ top: 10, right: 20, bottom: 10, left: 10 }}
+          margin={{ top: 24, right: 20, bottom: 10, left: 10 }}
           data={curveData}
         >
           <CartesianGrid strokeDasharray="3 3" stroke={CHART_COLORS.grid} />
@@ -71,7 +70,7 @@ const PowerCurve: React.FC<PowerCurveProps> = ({
               position: 'insideBottomRight',
               offset: -5,
               fill: CHART_COLORS.axis,
-              fontSize: 10,
+              fontSize: 9,
               fontFamily: 'monospace',
             }}
           />
@@ -85,11 +84,10 @@ const PowerCurve: React.FC<PowerCurveProps> = ({
               position: 'insideLeft',
               offset: 10,
               fill: CHART_COLORS.axis,
-              fontSize: 10,
+              fontSize: 9,
               fontFamily: 'monospace',
             }}
           />
-          {/* 80% power threshold line */}
           <ReferenceLine
             y={0.8}
             stroke={CHART_COLORS.powerThreshold}
@@ -99,7 +97,7 @@ const PowerCurve: React.FC<PowerCurveProps> = ({
               value: '80%',
               position: 'right',
               fill: CHART_COLORS.powerThreshold,
-              fontSize: 10,
+              fontSize: 9,
               fontFamily: 'monospace',
             }}
           />
@@ -121,8 +119,8 @@ const PowerCurve: React.FC<PowerCurveProps> = ({
                 const { cx, cy } = props as { cx: number; cy: number };
                 return (
                   <g>
-                    <circle cx={cx} cy={cy} r={7} fill={CHART_COLORS.treatment} stroke="white" strokeWidth={2} />
-                    <text x={cx} y={cy - 14} textAnchor="middle" fill="white" fontSize={10} fontFamily="monospace">
+                    <circle cx={cx} cy={cy} r={6} fill={CHART_COLORS.treatment} stroke="rgba(255,255,255,0.5)" strokeWidth={1.5} />
+                    <text x={cx} y={cy - 12} textAnchor="middle" fill="white" fontSize={9} fontFamily="monospace">
                       Current
                     </text>
                   </g>

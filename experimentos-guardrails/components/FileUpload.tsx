@@ -1,12 +1,6 @@
 
 import React, { useState, useCallback } from 'react';
-
-const IconWrapper = ({ name, className = "", size = 24 }: { name: string, className?: string, size?: number }) => (
-    <span className={`material-symbols-rounded ${className}`} style={{ fontSize: size }}>
-        {name}
-    </span>
-);
-
+import Icon from './Icon';
 
 interface FileUploadProps {
     onFileSelect: (file: File) => void;
@@ -46,10 +40,11 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
     return (
         <div
             data-tour="file-upload"
-            className={`relative w-full h-64 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center transition-all duration-300 ${isDragging
-                ? 'border-primary bg-primary/10'
-                : 'border-border-dark/50 bg-secondary-dark/30 hover:border-primary/50'
-                }`}
+            className={`relative w-full rounded-xl border-2 border-dashed transition-all duration-200 ${
+                isDragging
+                    ? 'border-primary bg-primary/[0.06]'
+                    : 'border-white/[0.08] bg-surface-1/30 hover:border-primary/30 hover:bg-surface-1/50'
+            }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
@@ -62,23 +57,29 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
                 disabled={isUploading}
             />
 
-            <div className="flex flex-col items-center gap-3 text-center pointer-events-none">
-                <div className={`p-4 rounded-full transition-transform duration-300 ${isDragging ? 'scale-110 bg-primary/20' : 'bg-background-dark shadow-glow'}`}>
-                    <IconWrapper name="upload_file" className={isDragging ? 'text-primary' : 'text-[#93c8b6]'} size={32} />
+            <div className="flex flex-col items-center gap-3 py-12 px-6 text-center pointer-events-none">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-200 ${
+                    isDragging ? 'bg-primary/15 scale-110' : 'bg-white/[0.04]'
+                }`}>
+                    <Icon
+                        name={isUploading ? "hourglass_empty" : "upload_file"}
+                        className={isDragging ? 'text-primary' : 'text-white/30'}
+                        size={24}
+                    />
                 </div>
 
                 <div className="flex flex-col gap-1">
-                    <p className="text-lg font-bold text-white">
+                    <p className="text-sm font-medium text-white">
                         {isUploading ? 'Uploading...' : 'Drop your CSV file here'}
                     </p>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-xs text-white/30">
                         or click to browse
                     </p>
                 </div>
 
-                <div className="mt-2 px-3 py-1 rounded-full bg-background-dark/50 border border-border-dark text-xs text-gray-500 font-mono">
-                    Supported: .csv
-                </div>
+                <span className="text-[10px] font-mono text-white/20 bg-white/[0.03] px-2.5 py-1 rounded-full border border-white/[0.04]">
+                    .csv
+                </span>
             </div>
         </div>
     );

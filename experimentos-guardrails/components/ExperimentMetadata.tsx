@@ -23,7 +23,7 @@ export const ExperimentMetadata: React.FC<ExperimentMetadataProps> = ({ onMetada
     return (
         <div className="space-y-4">
             <div>
-                <label className="block text-sm font-medium text-white/70 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-white/35 mb-2">
                     Experiment Name
                 </label>
                 <input
@@ -31,12 +31,12 @@ export const ExperimentMetadata: React.FC<ExperimentMetadataProps> = ({ onMetada
                     value={experimentName}
                     onChange={handleNameChange}
                     placeholder="e.g. Homepage Banner A/B Test"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                    className="input-field"
                 />
             </div>
 
             <div>
-                <label className="block text-sm font-medium text-white/70 mb-2">
+                <label className="block text-[11px] font-semibold uppercase tracking-wider text-white/35 mb-2">
                     Expected Traffic Split (control:treatment)
                 </label>
                 <input
@@ -44,7 +44,7 @@ export const ExperimentMetadata: React.FC<ExperimentMetadataProps> = ({ onMetada
                     value={trafficSplit}
                     onChange={handleSplitChange}
                     placeholder="50:50"
-                    className="w-full px-4 py-3 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary/50 transition-all"
+                    className="input-field"
                 />
             </div>
         </div>

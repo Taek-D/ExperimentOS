@@ -1,23 +1,23 @@
 /** Shared chart color palette and styles for Recharts components */
 
 export const CHART_COLORS = {
-  primary: '#6366f1',     // indigo-500 (matches Tailwind primary)
+  primary: '#6366f1',     // indigo-500
   primaryLight: '#818cf8', // indigo-400
   control: '#60a5fa',     // blue-400
-  treatment: '#34d399',   // emerald-400
-  danger: '#f87171',      // red-400
-  warning: '#fbbf24',     // amber-400
-  neutral: '#94a3b8',     // slate-400
-  grid: 'rgba(255,255,255,0.08)',
-  axis: 'rgba(255,255,255,0.4)',
-  zeroLine: '#f87171',
-  powerThreshold: '#fbbf24',
+  treatment: '#00e5a0',   // primary green
+  danger: '#ff4d6a',      // red
+  warning: '#ffb020',     // amber
+  neutral: '#64748b',     // slate-500
+  grid: 'rgba(255,255,255,0.05)',
+  axis: 'rgba(255,255,255,0.3)',
+  zeroLine: '#ff4d6a',
+  powerThreshold: '#ffb020',
 } as const;
 
 /** Extended palette for multi-variant charts */
 export const VARIANT_COLORS = [
   '#6366f1', // indigo-500
-  '#34d399', // emerald-400
+  '#00e5a0', // primary green
   '#f59e0b', // amber-500
   '#ec4899', // pink-500
   '#06b6d4', // cyan-500
@@ -28,7 +28,7 @@ export const VARIANT_COLORS = [
 
 export const CHART_FONT = {
   family: 'ui-monospace, SFMono-Regular, monospace',
-  size: 11,
+  size: 10,
 } as const;
 
 /** Common axis props for dark theme charts */

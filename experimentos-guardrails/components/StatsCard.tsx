@@ -13,29 +13,34 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, subValue, icon, var
   const isDanger = variant === 'danger';
 
   return (
-    <div className={`flex flex-col p-5 rounded-2xl relative overflow-hidden group transition-all duration-300 backdrop-blur-md ${isDanger
-        ? 'bg-danger/10 border border-danger/30 shadow-glow-red hover:bg-danger/15'
-        : 'bg-white/5 border border-white/5 hover:border-white/10 hover:bg-white/10'
-      }`}>
-      {/* Background Gradient Effect */}
-      <div className={`absolute -top-10 -right-10 w-32 h-32 rounded-full blur-3xl transition-opacity duration-500 pointer-events-none ${isDanger ? 'bg-danger/20 opacity-40' : 'bg-primary/10 opacity-0 group-hover:opacity-100'
-        }`}></div>
+    <div className={`relative overflow-hidden rounded-xl p-5 transition-all duration-200 group ${
+      isDanger
+        ? 'bg-danger/[0.08] border border-danger/20 hover:border-danger/30'
+        : 'bg-white/[0.03] border border-white/[0.06] hover:border-white/[0.1] hover:bg-white/[0.05]'
+    }`}>
+      {/* Subtle gradient accent */}
+      <div className={`absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl pointer-events-none ${
+        isDanger ? 'bg-danger/10' : 'bg-primary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500'
+      }`} />
 
-      <div className={`absolute top-0 right-0 p-5 transition-transform duration-300 ${isDanger ? 'opacity-20' : 'opacity-10 group-hover:opacity-30 group-hover:scale-110 group-hover:-rotate-12'
-        }`}>
-        <Icon name={icon} size={48} className={isDanger ? 'text-danger' : 'text-white'} />
+      <div className={`absolute top-4 right-4 transition-all duration-300 ${
+        isDanger ? 'opacity-15' : 'opacity-[0.06] group-hover:opacity-[0.12] group-hover:scale-110'
+      }`}>
+        <Icon name={icon} size={40} className={isDanger ? 'text-danger' : 'text-white'} />
       </div>
 
-      <p className={`text-sm font-medium mb-2 uppercase tracking-wide z-10 ${isDanger ? 'text-danger' : 'text-white/60'}`}>
+      <p className={`text-[11px] font-semibold uppercase tracking-wider mb-3 z-10 relative ${
+        isDanger ? 'text-danger/80' : 'text-white/40'
+      }`}>
         {title}
       </p>
 
-      <div className="flex items-end gap-3 z-10 mt-auto">
-        <p className="text-white text-2xl sm:text-4xl font-mono font-bold tracking-tighter">
+      <div className="flex items-end gap-3 z-10 relative">
+        <p className="text-white text-2xl sm:text-3xl font-mono font-bold tracking-tight">
           {value}
         </p>
         {subValue && (
-          <div className="mb-1.5">
+          <div className="mb-1">
             {subValue}
           </div>
         )}

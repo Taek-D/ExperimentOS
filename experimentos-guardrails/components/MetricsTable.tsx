@@ -17,7 +17,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
     const items: MetricRowData[] = [];
 
     if (isMultiVariantPrimary(p)) {
-      // Multi-variant: Overall summary row
       items.push({
         id: "overall",
         type: "Overall Test",
@@ -35,7 +34,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
         variantName: undefined,
       });
 
-      // Per-variant rows vs control
       for (const [vName, vData] of Object.entries(p.variants)) {
         const isBest = vName === p.best_variant;
         items.push({
@@ -56,7 +54,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
         });
       }
 
-      // Guardrail rows (multi-variant)
       if (isMultiVariantGuardrails(g)) {
         for (const [vName, entries] of Object.entries(g.by_variant)) {
           if (!entries) continue;
@@ -81,7 +78,6 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
         }
       }
     } else {
-      // 2-variant: existing logic
       items.push({
         id: "primary",
         type: "Primary Metric",
@@ -127,29 +123,29 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
   if (!data) return null;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 px-2 sm:px-6 pb-6" data-tour="metrics-table">
-      <div className="flex-1 overflow-auto rounded-2xl border border-white/5 bg-background-dark/30 backdrop-blur-sm shadow-inner relative scroll-smooth custom-scrollbar">
+    <div className="flex-1 flex flex-col min-h-0" data-tour="metrics-table">
+      <div className="flex-1 overflow-auto rounded-xl border border-white/[0.06] bg-surface-0/50 custom-scrollbar">
         <table className="w-full text-left border-collapse" style={{ minWidth: '640px' }}>
-          <thead className="sticky top-0 z-10 bg-[#15232d]/95 backdrop-blur-md shadow-sm">
+          <thead className="sticky top-0 z-10 bg-surface-1/95 backdrop-blur-md">
             <tr>
-              <th className="p-4 pl-6 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 w-[30%]">Metric Name</th>
-              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">Baseline (A)</th>
-              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">Variant (B)</th>
-              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right"><GlossaryTerm termKey="delta">Delta</GlossaryTerm></th>
-              <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right"><GlossaryTerm termKey="p-value">P-Value</GlossaryTerm></th>
+              <th className="p-3.5 pl-5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] w-[30%]">Metric Name</th>
+              <th className="p-3.5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] text-right">Baseline (A)</th>
+              <th className="p-3.5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] text-right">Variant (B)</th>
+              <th className="p-3.5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] text-right"><GlossaryTerm termKey="delta">Delta</GlossaryTerm></th>
+              <th className="p-3.5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] text-right"><GlossaryTerm termKey="p-value">P-Value</GlossaryTerm></th>
               {isMulti && (
-                <th className="p-4 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">P (Corrected)</th>
+                <th className="p-3.5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] text-right">P (Corrected)</th>
               )}
-              <th className="p-4 pr-6 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 text-right">Status</th>
+              <th className="p-3.5 pr-5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] text-right">Status</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-white/5">
+          <tbody className="divide-y divide-white/[0.04]">
             {rows.map((row) => (
               <MetricRow key={row.id} row={row} showCorrected={isMulti} />
             ))}
           </tbody>
         </table>
-        <div className="h-8"></div>
+        <div className="h-4" />
       </div>
     </div>
   );
@@ -183,41 +179,41 @@ const MetricRow: React.FC<MetricRowProps> = ({ row, showCorrected }) => {
   let deltaColorClass = 'text-primary';
   if (isCritical) deltaColorClass = 'text-danger bg-danger/10 px-1.5 py-0.5 rounded -mr-1.5';
   if (isWarning) deltaColorClass = 'text-warning';
-  if (row.id === 'primary' && row.status === 'NEGATIVE') deltaColorClass = 'text-white/60';
+  if (row.id === 'primary' && row.status === 'NEGATIVE') deltaColorClass = 'text-white/50';
 
   const isBest = row.type === 'Best Variant';
   const isOverall = row.type === 'Overall Test';
 
   return (
-    <tr className={`group relative transition-all duration-200 ${isCritical ? 'hover:bg-danger/[0.03]' : 'hover:bg-white/[0.02]'}`}>
-      <td className="p-4 pl-6 relative">
+    <tr className={`group relative transition-colors duration-150 ${isCritical ? 'hover:bg-danger/[0.03]' : 'hover:bg-white/[0.02]'}`}>
+      <td className="p-3.5 pl-5 relative">
         {isCritical && (
           <>
-            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-danger shadow-[0_0_12px_rgba(239,68,68,0.8)]"></div>
-            <div className="absolute inset-0 bg-gradient-to-r from-danger/5 to-transparent pointer-events-none mix-blend-overlay"></div>
+            <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-danger shadow-[0_0_8px_rgba(255,77,106,0.6)]" />
+            <div className="absolute inset-0 bg-gradient-to-r from-danger/[0.04] to-transparent pointer-events-none" />
           </>
         )}
         <div className="flex flex-col relative z-10">
           <div className="flex items-center gap-2">
-            <span className={`font-medium text-sm transition-colors ${isCritical ? 'text-danger' : 'text-white'}`}>{row.name}</span>
-            {row.type === 'Primary Metric' && <span className="text-[10px] bg-primary/20 text-primary px-1.5 rounded">Primary</span>}
-            {isBest && <span className="text-[10px] bg-yellow-500/20 text-yellow-400 px-1.5 rounded">Best</span>}
-            {isOverall && <span className="text-[10px] bg-blue-500/20 text-blue-400 px-1.5 rounded">Overall</span>}
-            {row.type === 'Variant' && <span className="text-[10px] bg-white/10 text-white/50 px-1.5 rounded">Variant</span>}
+            <span className={`font-medium text-sm ${isCritical ? 'text-danger' : 'text-white'}`}>{row.name}</span>
+            {row.type === 'Primary Metric' && <span className="text-[9px] font-bold bg-primary/15 text-primary px-1.5 py-0.5 rounded uppercase tracking-wider">Primary</span>}
+            {isBest && <span className="text-[9px] font-bold bg-yellow-500/15 text-yellow-400 px-1.5 py-0.5 rounded uppercase tracking-wider">Best</span>}
+            {isOverall && <span className="text-[9px] font-bold bg-info/15 text-info px-1.5 py-0.5 rounded uppercase tracking-wider">Overall</span>}
+            {row.type === 'Variant' && <span className="text-[9px] font-bold bg-white/[0.06] text-white/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Variant</span>}
           </div>
-          <span className="text-white/30 text-xs font-mono mt-0.5 group-hover:text-white/50 transition-colors">{row.key}</span>
+          <span className="text-white/20 text-[10px] font-mono mt-0.5 group-hover:text-white/35 transition-colors">{row.key}</span>
         </div>
       </td>
-      <td className="p-4 text-right font-mono text-sm text-white/50">{row.baseline}</td>
-      <td className="p-4 text-right font-mono text-sm text-white/90 font-bold">{row.variant}</td>
-      <td className="p-4 text-right font-mono text-sm font-bold">
+      <td className="p-3.5 text-right font-mono text-sm text-white/40">{row.baseline}</td>
+      <td className="p-3.5 text-right font-mono text-sm text-white/85 font-semibold">{row.variant}</td>
+      <td className="p-3.5 text-right font-mono text-sm font-semibold">
         <span className={deltaColorClass}>{row.delta}</span>
       </td>
-      <td className="p-4 text-right font-mono text-sm text-white/50">{row.pValue}</td>
+      <td className="p-3.5 text-right font-mono text-sm text-white/40">{row.pValue}</td>
       {showCorrected && (
-        <td className="p-4 text-right font-mono text-sm text-white/50">{row.pCorrected ?? '-'}</td>
+        <td className="p-3.5 text-right font-mono text-sm text-white/40">{row.pCorrected ?? '-'}</td>
       )}
-      <td className="p-4 pr-6 text-right">
+      <td className="p-3.5 pr-5 text-right">
         <StatusBadge status={row.status} />
       </td>
     </tr>
@@ -225,11 +221,11 @@ const MetricRow: React.FC<MetricRowProps> = ({ row, showCorrected }) => {
 };
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-  if (status === 'NEGATIVE') return <span className="text-white/50 text-[10px]">No Lift</span>;
+  if (status === 'NEGATIVE') return <span className="text-white/35 text-[10px] font-mono">No Lift</span>;
   if (status === 'CRITICAL') {
     return (
       <span className="status-badge-critical">
-        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
+        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
         Critical
       </span>
     );

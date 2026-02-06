@@ -36,7 +36,6 @@ function buildPoints(primary: PrimaryResultUnion, guardrails: GuardrailResult[])
   let yIndex = 0;
 
   if (isMultiVariantPrimary(primary)) {
-    // Multi-variant: one point per variant
     const variantEntries = Object.entries(primary.variants);
     variantEntries.forEach(([vName, vData], i) => {
       const ciLow = vData.ci_95[0];
@@ -46,7 +45,7 @@ function buildPoints(primary: PrimaryResultUnion, guardrails: GuardrailResult[])
       const color = VARIANT_COLORS[i % VARIANT_COLORS.length] ?? CHART_COLORS.primary;
 
       points.push({
-        name: `${vName}${isBest ? ' ★' : ''}`,
+        name: `${vName}${isBest ? ' *' : ''}`,
         y: yIndex,
         effect,
         ciLow,
@@ -59,7 +58,6 @@ function buildPoints(primary: PrimaryResultUnion, guardrails: GuardrailResult[])
       yIndex += 1;
     });
   } else {
-    // 2-variant: original logic
     const ciLow = primary.ci_95[0];
     const ciHigh = primary.ci_95[1];
     const effect = primary.absolute_lift;
@@ -78,7 +76,6 @@ function buildPoints(primary: PrimaryResultUnion, guardrails: GuardrailResult[])
     yIndex += 1;
   }
 
-  // Guardrail metrics (2-variant only passes these)
   for (const g of guardrails) {
     const delta = g.delta;
     points.push({
@@ -105,11 +102,11 @@ const CustomTooltip: React.FC<{
   if (!active || !payload?.[0]) return null;
   const d = payload[0].payload;
   return (
-    <div className="bg-slate-900/95 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono backdrop-blur-sm">
+    <div className="bg-surface-1/95 border border-white/10 rounded-lg px-3 py-2 text-xs font-mono backdrop-blur-md">
       <div className="text-white font-semibold mb-1">{d.name}</div>
-      <div className="text-white/70">Effect: {(d.effect * 100).toFixed(3)}%</div>
+      <div className="text-white/60">Effect: {(d.effect * 100).toFixed(3)}%</div>
       {d.errorMinus > 0 && (
-        <div className="text-white/70">
+        <div className="text-white/60">
           95% CI: [{(d.ciLow * 100).toFixed(3)}%, {(d.ciHigh * 100).toFixed(3)}%]
         </div>
       )}
@@ -122,7 +119,6 @@ const ForestPlot: React.FC<ForestPlotProps> = ({ primary, guardrails }) => {
   const points = buildPoints(primary, guardrails);
   const names = points.map((p) => p.name);
 
-  // Determine x-axis domain from all effects and CIs
   const allValues = points.flatMap((p) => [p.ciLow, p.ciHigh, p.effect]);
   const absMax = Math.max(...allValues.map(Math.abs), 0.001);
   const padding = absMax * 0.3;
@@ -130,9 +126,9 @@ const ForestPlot: React.FC<ForestPlotProps> = ({ primary, guardrails }) => {
   const xMax = absMax + padding;
 
   return (
-    <div className="glass-card p-6" data-tour="forest-plot">
-      <h3 className="text-lg font-semibold text-white mb-1">Forest Plot</h3>
-      <p className="text-white/50 text-xs mb-4 font-mono">
+    <div className="glass-card p-5" data-tour="forest-plot">
+      <h3 className="text-base font-semibold text-white mb-0.5">Forest Plot</h3>
+      <p className="text-white/30 text-[10px] mb-4 font-mono uppercase tracking-wider">
         Effect sizes with 95% confidence intervals
       </p>
       <div className="overflow-x-auto -mx-2 px-2">
@@ -171,7 +167,7 @@ const ForestPlot: React.FC<ForestPlotProps> = ({ primary, guardrails }) => {
               value: 'No Effect',
               position: 'top',
               fill: CHART_COLORS.zeroLine,
-              fontSize: 10,
+              fontSize: 9,
               fontFamily: 'monospace',
             }}
           />
@@ -185,10 +181,10 @@ const ForestPlot: React.FC<ForestPlotProps> = ({ primary, guardrails }) => {
                 <circle
                   cx={cx}
                   cy={cy}
-                  r={6}
+                  r={5}
                   fill={payload.color}
-                  stroke="white"
-                  strokeWidth={1.5}
+                  stroke="rgba(255,255,255,0.3)"
+                  strokeWidth={1}
                 />
               );
             }}
