@@ -94,17 +94,17 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
     };
 
     return (
-        <div className="max-w-5xl mx-auto p-6 space-y-6 pb-20">
-            <div className="flex items-center justify-between">
+        <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6 pb-20">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h2 className="text-3xl font-bold text-white font-display">Decision Memo</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold text-white font-display">Decision Memo</h2>
                     <p className="text-white/60 text-sm mt-1">Generate a comprehensive decision memo for your experiment</p>
                 </div>
 
                 <button
                     onClick={handleGenerate}
                     disabled={loading || !health || !analysisResult}
-                    className="px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="focus-ring px-6 py-3 bg-primary text-white rounded-xl font-medium hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 shrink-0"
                 >
                     {loading ? (
                         <>
@@ -150,7 +150,7 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
                     </div>
 
                     {/* Download Buttons */}
-                    <div className="flex gap-3">
+                    <div className="flex flex-col sm:flex-row gap-3">
                         <button
                             onClick={downloadMarkdown}
                             className="flex-1 px-6 py-4 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-3"

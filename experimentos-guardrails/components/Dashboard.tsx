@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import StatsCard from './StatsCard';
 import MetricsTable from './MetricsTable';
 import ForestPlot from './charts/ForestPlot';
+import Icon from './Icon';
 import {
   AnalysisResult,
   HealthCheckResult,
@@ -76,12 +77,12 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
   ];
 
   return (
-    <>
-      <header className="flex flex-col gap-6 p-6 pb-4 shrink-0 z-10">
+    <div className="flex flex-col h-[calc(100vh-6rem)] overflow-hidden">
+      <header className="flex flex-col gap-6 p-4 sm:p-6 pb-4 shrink-0 z-10">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-3">
-              <h2 className="text-white text-3xl font-bold tracking-tight font-display drop-shadow-sm">Experiment Results</h2>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <h2 className="text-white text-2xl sm:text-3xl font-bold tracking-tight font-display drop-shadow-sm">Experiment Results</h2>
               <span className="px-2 py-0.5 rounded-lg text-[10px] font-bold font-mono bg-primary/20 text-primary uppercase border border-primary/20 tracking-wider backdrop-blur-sm shadow-glow-primary">
                 Analysis Complete
               </span>
@@ -101,7 +102,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4" data-tour="stats-cards">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" data-tour="stats-cards">
           <StatsCard
             title={`Primary Lift${bestVariantLabel}`}
             value={`${isPositive ? '+' : ''}${liftPercentage}%`}
@@ -138,13 +139,13 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
         </div>
       </header>
 
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <div className="flex gap-2 px-6 pb-4 border-b border-white/10" data-tour="dashboard-tabs">
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex gap-2 px-4 sm:px-6 pb-4 border-b border-white/10 overflow-x-auto shrink-0" data-tour="dashboard-tabs">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 ${activeTab === tab.id
+              className={`focus-ring px-4 py-2 rounded-lg font-medium transition-all flex items-center gap-2 shrink-0 ${activeTab === tab.id
                   ? 'bg-primary text-white shadow-lg shadow-primary/20'
                   : 'bg-white/5 text-white/70 hover:bg-white/10 hover:text-white'
                 }`}
@@ -158,7 +159,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
           ))}
         </div>
 
-        <div className="flex-1 overflow-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 pb-16 custom-scrollbar">
           {activeTab === 'primary' && (
             <div className="space-y-6">
               <MetricsTable data={data} />
@@ -174,7 +175,11 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
               ) : (
                 <>
                   {Array.isArray(guardrails) && guardrails.length === 0 ? (
-                    <div className="text-center py-12 text-white/50"><p>No guardrails specified</p></div>
+                    <div className="empty-state">
+                      <Icon name="shield" size={48} className="empty-state-icon" />
+                      <p className="empty-state-title">No guardrails specified</p>
+                      <p className="empty-state-description">Add guardrail columns to your CSV to monitor safety metrics.</p>
+                    </div>
                   ) : (
                     <div className="space-y-3">
                       {Array.isArray(guardrails) && guardrails.map((g, idx) => (
@@ -190,7 +195,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
           {activeTab === 'bayesian' && <BayesianInsightsComponent insights={bayesianInsights} />}
         </div>
       </div>
-    </>
+    </div>
   );
 };
 
@@ -200,14 +205,11 @@ interface GuardrailCardProps {
 }
 
 const GuardrailCard: React.FC<GuardrailCardProps> = ({ g }) => (
-  <div className="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl">
+  <div className="glass-card p-6">
     <div className="flex items-center justify-between mb-4">
       <h4 className="text-lg font-semibold text-white">{g.name}</h4>
-      <span className={`px-3 py-1 rounded-lg text-sm font-medium ${g.severe ? 'bg-danger/20 text-danger border border-danger/30' :
-          g.worsened ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
-            'bg-primary/20 text-primary border border-primary/30'
-        }`}>
-        {g.severe ? '🚫 Severe' : g.worsened ? '⚠️ Worsened' : '✅ OK'}
+      <span className={g.severe ? 'status-badge-critical' : g.worsened ? 'status-badge-warning' : 'status-badge-positive'}>
+        {g.severe ? 'Severe' : g.worsened ? 'Worsened' : 'OK'}
       </span>
     </div>
     <div className="grid grid-cols-3 gap-4">
@@ -241,7 +243,7 @@ const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailRes
     <div className="space-y-6">
       {/* Summary */}
       {guardrails.summary.length > 0 && (
-        <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+        <div className="glass-card p-4">
           <h4 className="text-sm font-semibold text-white/70 mb-3 uppercase tracking-wider">Summary</h4>
           <div className="space-y-2">
             {guardrails.summary.map((s, i) => (
@@ -249,9 +251,7 @@ const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailRes
                 <span className="text-white">{s.name}</span>
                 <div className="flex items-center gap-3">
                   <span className="text-white/50 font-mono">worst: {s.worst_variant}</span>
-                  <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                    s.severe ? 'bg-danger/20 text-danger' : s.worsened ? 'bg-orange-500/20 text-orange-400' : 'bg-primary/20 text-primary'
-                  }`}>
+                  <span className={s.severe ? 'status-badge-critical' : s.worsened ? 'status-badge-warning' : 'status-badge-positive'}>
                     {s.severe ? 'Severe' : s.worsened ? 'Worsened' : 'OK'}
                   </span>
                 </div>
@@ -267,7 +267,7 @@ const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailRes
         if (!entries) return null;
         const color = VARIANT_COLORS[vi % VARIANT_COLORS.length];
         return (
-          <div key={vName} className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+          <div key={vName} className="glass-card p-4">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: color }}></span>
               <h4 className="text-sm font-semibold text-white uppercase tracking-wider">{vName} vs Control</h4>
@@ -293,9 +293,7 @@ const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailRes
                         {(g.delta * 100).toFixed(3)}pp
                       </td>
                       <td className="p-2 text-right">
-                        <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                          g.severe ? 'bg-danger/20 text-danger' : g.worsened ? 'bg-orange-500/20 text-orange-400' : 'bg-primary/20 text-primary'
-                        }`}>
+                        <span className={g.severe ? 'status-badge-critical' : g.worsened ? 'status-badge-warning' : 'status-badge-positive'}>
                           {g.severe ? 'Severe' : g.worsened ? 'Worsened' : 'OK'}
                         </span>
                       </td>

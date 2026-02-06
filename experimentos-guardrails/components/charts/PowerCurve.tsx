@@ -48,11 +48,13 @@ const PowerCurve: React.FC<PowerCurveProps> = ({
     : [];
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+    <div className="glass-card p-6">
       <h3 className="text-lg font-semibold text-white mb-1">Power Curve</h3>
       <p className="text-white/50 text-xs mb-4 font-mono">
         Sample size vs statistical power (1-&beta;)
       </p>
+      <div className="overflow-x-auto -mx-2 px-2">
+        <div style={{ minWidth: '480px' }}>
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart
           margin={{ top: 10, right: 20, bottom: 10, left: 10 }}
@@ -130,6 +132,8 @@ const PowerCurve: React.FC<PowerCurveProps> = ({
           )}
         </ComposedChart>
       </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 };

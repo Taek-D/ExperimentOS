@@ -98,14 +98,14 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
     };
 
     return (
-        <div className="max-w-5xl mx-auto p-6 space-y-6">
+        <div className="max-w-5xl mx-auto p-4 sm:p-6 space-y-6">
             <div>
-                <h2 className="text-3xl font-bold text-white font-display">🔢 Sample Size Calculator</h2>
+                <h2 className="text-2xl sm:text-3xl font-bold text-white font-display">🔢 Sample Size Calculator</h2>
                 <p className="text-white/60 text-sm mt-1">Calculate required sample size for your experiment</p>
             </div>
 
             {/* Metric Type Selection */}
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div className="glass-card p-6">
                 <label className="block text-white font-semibold mb-3">Metric Type</label>
                 <div className="flex gap-3">
                     <button
@@ -133,7 +133,7 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {metricType === 'conversion' ? (
                     <>
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <div className="glass-card p-6">
                             <label className="block text-white font-semibold mb-2">Baseline Rate (%)</label>
                             <input
                                 type="number"
@@ -143,7 +143,7 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
                                 step="0.1"
                             />
                         </div>
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <div className="glass-card p-6">
                             <label className="block text-white font-semibold mb-2">MDE (Relative Lift %)</label>
                             <input
                                 type="number"
@@ -156,7 +156,7 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
                     </>
                 ) : (
                     <>
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <div className="glass-card p-6">
                             <label className="block text-white font-semibold mb-2">Standard Deviation</label>
                             <input
                                 type="number"
@@ -166,7 +166,7 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
                                 step="1"
                             />
                         </div>
-                        <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                        <div className="glass-card p-6">
                             <label className="block text-white font-semibold mb-2">MDE (Absolute Effect)</label>
                             <input
                                 type="number"
@@ -180,7 +180,7 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
                 )}
             </div>
 
-            <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+            <div className="glass-card p-6">
                 <label className="block text-white font-semibold mb-2">Est. Daily Traffic (Total Users/Day)</label>
                 <input
                     type="number"
@@ -192,7 +192,7 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
             </div>
 
             {/* Advanced Settings */}
-            <details className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden">
+            <details className="glass-card overflow-hidden">
                 <summary className="p-4 cursor-pointer text-white font-semibold hover:bg-white/5 transition-colors">
                     Advanced Settings
                 </summary>

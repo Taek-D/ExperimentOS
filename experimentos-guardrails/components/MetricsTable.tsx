@@ -1,5 +1,4 @@
 import React, { useMemo } from 'react';
-import Icon from './Icon';
 import GlossaryTerm from './GlossaryTerm';
 import { AnalysisResult, isMultiVariantPrimary, isMultiVariantGuardrails } from '../api/client';
 
@@ -128,37 +127,9 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
   if (!data) return null;
 
   return (
-    <div className="flex-1 flex flex-col min-h-0 px-6 pb-6" data-tour="metrics-table">
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-4 py-2">
-        <div className="flex items-center gap-3 flex-1 min-w-[300px]">
-          <div className="relative flex-1 max-w-md group">
-            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40 transition-colors group-focus-within:text-primary pointer-events-none">
-              <Icon name="search" size={18} />
-            </span>
-            <input
-              type="text"
-              className="w-full h-11 pl-10 pr-4 bg-white/5 border border-white/10 text-white placeholder-white/30 text-sm rounded-xl focus:ring-1 focus:ring-primary focus:border-primary focus:outline-none transition-all font-mono hover:bg-white/10 hover:border-white/20"
-              placeholder="Search metrics..."
-            />
-          </div>
-          <div className="h-6 w-px bg-white/10 mx-1"></div>
-          <button className="h-9 px-3.5 rounded-xl bg-danger/10 hover:bg-danger/20 border border-danger/20 hover:border-danger/40 text-danger text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2">
-            <Icon name="filter_list" size={16} />
-            Show Failing Only
-          </button>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button className="h-9 w-9 flex items-center justify-center rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/10 text-white/60 hover:text-white transition-colors" title="Download CSV">
-            <Icon name="download" size={18} />
-          </button>
-        </div>
-      </div>
-
-      {/* Table Container */}
+    <div className="flex-1 flex flex-col min-h-0 px-2 sm:px-6 pb-6" data-tour="metrics-table">
       <div className="flex-1 overflow-auto rounded-2xl border border-white/5 bg-background-dark/30 backdrop-blur-sm shadow-inner relative scroll-smooth custom-scrollbar">
-        <table className="w-full text-left border-collapse">
+        <table className="w-full text-left border-collapse" style={{ minWidth: '640px' }}>
           <thead className="sticky top-0 z-10 bg-[#15232d]/95 backdrop-blur-md shadow-sm">
             <tr>
               <th className="p-4 pl-6 text-white/40 text-[11px] font-mono uppercase tracking-widest font-semibold border-b border-white/5 w-[30%]">Metric Name</th>
@@ -254,34 +225,18 @@ const MetricRow: React.FC<MetricRowProps> = ({ row, showCorrected }) => {
 };
 
 const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
-  if (status === 'CRITICAL' || status === 'NEGATIVE') {
-    if (status === 'NEGATIVE') return <span className="text-white/50 text-[10px]">No Lift</span>;
+  if (status === 'NEGATIVE') return <span className="text-white/50 text-[10px]">No Lift</span>;
+  if (status === 'CRITICAL') {
     return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-danger/10 border border-danger/20 text-danger text-[10px] font-bold uppercase tracking-wider shadow-glow-red hover:bg-danger/20 transition-colors cursor-default">
-        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse box-shadow-[0_0_8px_rgba(239,68,68,1)]"></span>
+      <span className="status-badge-critical">
+        <span className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse"></span>
         Critical
       </span>
     );
   }
-  if (status === 'WARNING') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-warning/10 border border-warning/20 text-warning text-[10px] font-bold uppercase tracking-wider">
-        Warning
-      </span>
-    );
-  }
-  if (status === 'POSITIVE') {
-    return (
-      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-primary/10 border border-primary/20 text-primary text-[10px] font-bold uppercase tracking-wider hover:bg-primary/20 transition-colors cursor-default">
-        Significant
-      </span>
-    );
-  }
-  return (
-    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-white/5 border border-white/10 text-white/40 text-[10px] font-bold uppercase tracking-wider hover:bg-white/10 transition-colors cursor-default">
-      Stable
-    </span>
-  );
+  if (status === 'WARNING') return <span className="status-badge-warning">Warning</span>;
+  if (status === 'POSITIVE') return <span className="status-badge-positive">Significant</span>;
+  return <span className="status-badge-neutral">Stable</span>;
 };
 
 export default MetricsTable;

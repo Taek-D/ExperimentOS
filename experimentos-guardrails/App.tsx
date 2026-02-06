@@ -202,10 +202,10 @@ const App: React.FC = () => {
           {/* Navigation */}
           {analysisResult && (
             <div className="sticky top-0 z-50 bg-app-bg/95 backdrop-blur-sm pb-4 mb-2" data-tour="nav-tabs">
-              <div className="flex gap-3">
+              <div className="flex gap-2 sm:gap-3 overflow-x-auto">
                 <button
                   onClick={() => setCurrentPage('analysis')}
-                  className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'analysis'
+                  className={`focus-ring px-3 sm:px-4 py-2 rounded-xl font-medium transition-all text-sm sm:text-base shrink-0 ${currentPage === 'analysis'
                     ? 'bg-primary text-white shadow-lg shadow-primary/20'
                     : 'bg-white/5 text-white/70 hover:bg-white/10'
                     }`}
@@ -214,25 +214,25 @@ const App: React.FC = () => {
                 </button>
                 <button
                   onClick={() => setCurrentPage('memo')}
-                  className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'memo'
+                  className={`focus-ring px-3 sm:px-4 py-2 rounded-xl font-medium transition-all text-sm sm:text-base shrink-0 ${currentPage === 'memo'
                     ? 'bg-primary text-white shadow-lg shadow-primary/20'
                     : 'bg-white/5 text-white/70 hover:bg-white/10'
                     }`}
                 >
-                  Decision Memo
+                  Memo
                 </button>
                 <button
                   onClick={() => setCurrentPage('calculator')}
-                  className={`px-4 py-2 rounded-xl font-medium transition-all ${currentPage === 'calculator'
+                  className={`focus-ring px-3 sm:px-4 py-2 rounded-xl font-medium transition-all text-sm sm:text-base shrink-0 ${currentPage === 'calculator'
                     ? 'bg-primary text-white shadow-lg shadow-primary/20'
                     : 'bg-white/5 text-white/70 hover:bg-white/10'
                     }`}
                 >
-                  Power Calculator
+                  Calculator
                 </button>
 
                 {isAutoSync && (
-                  <span className="flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-lg text-sm border border-green-500/20 ml-2 animate-pulse">
+                  <span className="flex items-center gap-2 px-3 py-1 bg-green-500/10 text-green-400 rounded-lg text-sm border border-green-500/20 ml-2 animate-pulse shrink-0">
                     <span className="w-2 h-2 rounded-full bg-green-500"></span>
                     Live Sync
                   </span>
@@ -240,7 +240,7 @@ const App: React.FC = () => {
 
                 <button
                   onClick={handleReset}
-                  className="ml-auto px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                  className="focus-ring ml-auto px-3 sm:px-4 py-2 rounded-xl font-medium text-gray-400 hover:text-white hover:bg-white/10 transition-all shrink-0"
                 >
                   Reset
                 </button>

@@ -31,7 +31,7 @@ const StatsCard: React.FC<StatsCardProps> = ({ title, value, subValue, icon, var
       </p>
 
       <div className="flex items-end gap-3 z-10 mt-auto">
-        <p className="text-white text-4xl font-mono font-bold tracking-tighter">
+        <p className="text-white text-2xl sm:text-4xl font-mono font-bold tracking-tighter">
           {value}
         </p>
         {subValue && (

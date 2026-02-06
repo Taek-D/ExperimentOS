@@ -3,6 +3,7 @@ import type { BayesianInsightsUnion } from '../api/client';
 import { isMultiVariantBayesian } from '../api/client';
 import PosteriorDistribution from './charts/PosteriorDistribution';
 import GlossaryTerm from './GlossaryTerm';
+import Icon from './Icon';
 import { VARIANT_COLORS } from './charts/chartTheme';
 
 interface BayesianInsightsProps {
@@ -12,8 +13,10 @@ interface BayesianInsightsProps {
 export const BayesianInsightsComponent: React.FC<BayesianInsightsProps> = ({ insights }) => {
     if (!insights) {
         return (
-            <div className="text-center py-12 text-white/50">
-                <p>Bayesian 분석 결과가 없습니다</p>
+            <div className="empty-state">
+                <Icon name="insights" size={48} className="empty-state-icon" />
+                <p className="empty-state-title">No Bayesian analysis available</p>
+                <p className="empty-state-description">Bayesian insights will appear here after analysis completes.</p>
             </div>
         );
     }
@@ -23,9 +26,9 @@ export const BayesianInsightsComponent: React.FC<BayesianInsightsProps> = ({ ins
             <div className="flex items-start gap-3 p-4 bg-blue-500/10 border border-blue-500/20 rounded-xl">
                 <span className="text-2xl">ℹ️</span>
                 <div>
-                    <div className="font-medium text-white">참고용 (Informational Only)</div>
+                    <div className="font-medium text-white">Informational Only</div>
                     <div className="text-sm text-white/60 mt-1">
-                        베이지안 분석 결과는 의사결정 규칙(Launch/Hold/Rollback)에 영향을 주지 않습니다.
+                        Bayesian analysis results do not affect the decision rules (Launch/Hold/Rollback).
                     </div>
                 </div>
             </div>
@@ -151,7 +154,7 @@ const MultiVariantBayesianView: React.FC<{ insights: MultiVariantBayesianInsight
                     {/* P(being best) */}
                     <div className="space-y-4">
                         <h4 className="text-lg font-semibold text-white">P(Being Best)</h4>
-                        <div className="p-4 bg-white/5 border border-white/10 rounded-2xl">
+                        <div className="glass-card p-4">
                             <div className="space-y-3">
                                 {Object.entries(conversion.prob_being_best).map(([name, prob], i) => {
                                     const isControl = name === 'control';

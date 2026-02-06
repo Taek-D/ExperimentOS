@@ -370,18 +370,40 @@ def generate_memo(
     evidence_section = ""
     if bayesian_insights and bayesian_insights.get("conversion"):
         evidence_section = "\n---\n\n## ℹ️ Additional Evidence (Bayesian)\n\n> Note: This section is informational and did not influence the decision.\n\n"
-        
-        # Primary Conversion
+
         b_conv = bayesian_insights["conversion"]
-        prob = b_conv["prob_treatment_beats_control"]
-        loss = b_conv["expected_loss"]
-        evidence_section += f"- **Primary Metric**: P(Treatment > Control) = {prob:.1%}, Expected Loss = {loss:.6f}\n"
-        
+
+        if "vs_control" in b_conv:
+            # Multi-variant bayesian format
+            for v_name, v_data in b_conv["vs_control"].items():
+                prob = v_data.get("prob_beats_control", 0.0)
+                loss = v_data.get("expected_loss", 0.0)
+                evidence_section += f"- **{v_name}**: P(Variant > Control) = {prob:.1%}, Expected Loss = {loss:.6f}\n"
+            if "prob_being_best" in b_conv:
+                evidence_section += "\n**P(Being Best)**:\n"
+                for name, prob in b_conv["prob_being_best"].items():
+                    evidence_section += f"- {name}: {prob:.1%}\n"
+        elif "prob_treatment_beats_control" in b_conv:
+            # 2-variant bayesian format
+            prob = b_conv["prob_treatment_beats_control"]
+            loss = b_conv.get("expected_loss", 0.0)
+            evidence_section += f"- **Primary Metric**: P(Treatment > Control) = {prob:.1%}, Expected Loss = {loss:.6f}\n"
+
         # Continuous
-        if bayesian_insights.get("continuous"):
-            for metric, res in bayesian_insights["continuous"].items():
-                p = res["prob_treatment_beats_control"]
-                evidence_section += f"- **{metric}**: P(Treatment > Control) = {p:.1%}\n"
+        b_continuous = bayesian_insights.get("continuous", {})
+        if isinstance(b_continuous, dict) and b_continuous:
+            if "by_variant" in b_continuous:
+                # Multi-variant continuous bayesian
+                for v_name, metrics in b_continuous["by_variant"].items():
+                    if isinstance(metrics, dict):
+                        for metric, res in metrics.items():
+                            p = res.get("prob_treatment_beats_control", 0.0)
+                            evidence_section += f"- **{metric} ({v_name})**: P(Variant > Control) = {p:.1%}\n"
+            else:
+                # 2-variant continuous bayesian
+                for metric, res in b_continuous.items():
+                    p = res.get("prob_treatment_beats_control", 0.0)
+                    evidence_section += f"- **{metric}**: P(Treatment > Control) = {p:.1%}\n"
 
 
     

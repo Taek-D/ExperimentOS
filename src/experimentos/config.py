@@ -6,7 +6,6 @@
 """
 
 from dataclasses import dataclass
-from typing import Tuple
 
 
 @dataclass
@@ -33,7 +32,7 @@ class ExperimentConfig:
     """Guardrail Severe 임계값 (Δ >= 0.3%p = 0.003)"""
     
     # ===== Traffic Split =====
-    DEFAULT_EXPECTED_SPLIT: Tuple[float, float] = (50.0, 50.0)
+    DEFAULT_EXPECTED_SPLIT: tuple[float, float] = (50.0, 50.0)
     """기본 트래픽 분배 비율 (Control%, Treatment%)"""
     
     # ===== Statistical Settings =====

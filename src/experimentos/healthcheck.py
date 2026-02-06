@@ -6,7 +6,7 @@ CSV 데이터의 스키마 검증 및 SRM(Sample Ratio Mismatch) 탐지
 
 import pandas as pd
 from scipy import stats
-from typing import Dict, List, Tuple, Optional
+from typing import Optional
 import logging
 
 from .config import SRM_WARNING_THRESHOLD, SRM_BLOCKED_THRESHOLD, MIN_SAMPLE_SIZE_WARNING, config
@@ -14,7 +14,7 @@ from .config import SRM_WARNING_THRESHOLD, SRM_BLOCKED_THRESHOLD, MIN_SAMPLE_SIZ
 logger = logging.getLogger("experimentos")
 
 
-def validate_schema(df: pd.DataFrame) -> Dict:
+def validate_schema(df: pd.DataFrame) -> dict:
     """
     CSV 데이터의 스키마 및 논리적 오류를 검증
     
@@ -112,7 +112,7 @@ def validate_schema(df: pd.DataFrame) -> Dict:
     return {"status": "Healthy", "issues": issues if issues else ["검증 통과"]}
 
 
-def validate_continuous_schema(df: pd.DataFrame, issues: List[str]) -> str:
+def validate_continuous_schema(df: pd.DataFrame, issues: list[str]) -> str:
     """
     Continuous metric columns (_sum, _sum_sq) validation.
     Mutates 'issues' list if problems are found.
@@ -199,11 +199,11 @@ def validate_continuous_schema(df: pd.DataFrame, issues: List[str]) -> str:
 
 
 def detect_srm(
-    variants_data: Dict[str, int],
-    expected_split: Optional[List[float]] = None,
+    variants_data: dict[str, int],
+    expected_split: Optional[list[float]] = None,
     warning_threshold: float = SRM_WARNING_THRESHOLD,
     blocked_threshold: float = SRM_BLOCKED_THRESHOLD
-) -> Dict:
+) -> dict:
     """
     SRM (Sample Ratio Mismatch) 탐지 (N-variant 지원)
     
@@ -303,8 +303,8 @@ def detect_srm(
 
 def run_health_check(
     df: pd.DataFrame,
-    expected_split: Optional[List[float]] = None
-) -> Dict:
+    expected_split: Optional[list[float]] = None
+) -> dict:
     """
     전체 Health Check 실행 (스키마 검증 + SRM 탐지)
     

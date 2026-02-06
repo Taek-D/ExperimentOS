@@ -72,11 +72,13 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
   }, [control.alpha, control.beta, treatment.alpha, treatment.beta]);
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl">
+    <div className="glass-card p-6">
       <h3 className="text-lg font-semibold text-white mb-1">Posterior Distribution</h3>
       <p className="text-white/50 text-xs mb-4 font-mono">
         Beta posteriors: Control (blue) vs Treatment (green)
       </p>
+      <div className="overflow-x-auto -mx-2 px-2">
+        <div style={{ minWidth: '480px' }}>
       <ResponsiveContainer width="100%" height={300}>
         <AreaChart
           data={data}
@@ -138,6 +140,8 @@ const PosteriorDistribution: React.FC<PosteriorDistributionProps> = ({
           />
         </AreaChart>
       </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React from 'react';
+import Icon from './Icon';
 
 interface ContinuousMetric {
     metric_name: string;
@@ -17,9 +18,10 @@ interface ContinuousMetricsProps {
 export const ContinuousMetrics: React.FC<ContinuousMetricsProps> = ({ metrics }) => {
     if (!metrics || metrics.length === 0) {
         return (
-            <div className="text-center py-12 text-white/50">
-                <p>연속형 지표가 없습니다</p>
-                <p className="text-sm mt-2">CSV에 _sum, _sum_sq 컬럼이 있다면 자동으로 분석됩니다</p>
+            <div className="empty-state">
+                <Icon name="show_chart" size={48} className="empty-state-icon" />
+                <p className="empty-state-title">No continuous metrics found</p>
+                <p className="empty-state-description">Add _sum and _sum_sq columns to your CSV for automatic continuous metric analysis.</p>
             </div>
         );
     }
@@ -31,7 +33,7 @@ export const ContinuousMetrics: React.FC<ContinuousMetricsProps> = ({ metrics })
             </p>
 
             {metrics.map((metric, idx) => (
-                <div key={idx} className="p-6 bg-white/5 border border-white/10 rounded-2xl backdrop-blur-xl">
+                <div key={idx} className="glass-card p-6">
                     <h4 className="text-lg font-semibold text-white mb-4">📊 {metric.metric_name}</h4>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

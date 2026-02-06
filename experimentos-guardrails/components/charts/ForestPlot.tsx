@@ -130,11 +130,13 @@ const ForestPlot: React.FC<ForestPlotProps> = ({ primary, guardrails }) => {
   const xMax = absMax + padding;
 
   return (
-    <div className="bg-white/5 border border-white/10 rounded-2xl p-6 backdrop-blur-xl" data-tour="forest-plot">
+    <div className="glass-card p-6" data-tour="forest-plot">
       <h3 className="text-lg font-semibold text-white mb-1">Forest Plot</h3>
       <p className="text-white/50 text-xs mb-4 font-mono">
         Effect sizes with 95% confidence intervals
       </p>
+      <div className="overflow-x-auto -mx-2 px-2">
+        <div style={{ minWidth: '560px' }}>
       <ResponsiveContainer width="100%" height={Math.max(160, points.length * 56 + 60)}>
         <ComposedChart
           layout="vertical"
@@ -200,6 +202,8 @@ const ForestPlot: React.FC<ForestPlotProps> = ({ primary, guardrails }) => {
           </Scatter>
         </ComposedChart>
       </ResponsiveContainer>
+        </div>
+      </div>
     </div>
   );
 };
