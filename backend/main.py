@@ -8,7 +8,7 @@ import json
 import sys
 import os
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import Any
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -67,6 +67,7 @@ from src.experimentos.analysis import (
 )
 from src.experimentos.config import MULTIPLE_TESTING_METHOD
 from src.experimentos.memo import generate_memo, export_html, make_decision
+from src.experimentos.sequential import analyze_sequential, calculate_boundaries
 # Import integrations to register providers
 import src.experimentos.integrations.statsig
 import src.experimentos.integrations.growthbook
@@ -132,7 +133,7 @@ class AnalysisRequest(BaseModel):
     pass
 
 @app.post("/api/analyze")
-async def api_analyze(file: UploadFile = File(...), guardrails: Optional[str] = None):
+async def api_analyze(file: UploadFile = File(...), guardrails: str | None = None):
     # guardrails: comma separated list of columns, or None for auto-detect
     if not file.filename or not file.filename.endswith('.csv'):
         raise HTTPException(status_code=400, detail="Only CSV files are supported")
@@ -235,10 +236,10 @@ async def api_bayesian_analysis(file: UploadFile = File(...)):
 
 class DecisionMemoRequest(BaseModel):
     experiment_name: str
-    health_result: Dict[str, Any]
-    primary_result: Dict[str, Any]
+    health_result: dict[str, Any]
+    primary_result: dict[str, Any]
     guardrail_results: Any  # list[dict] for 2-variant, dict for multi-variant
-    bayesian_insights: Optional[Dict[str, Any]] = None
+    bayesian_insights: dict[str, Any] | None = None
 
 
 @app.post("/api/decision-memo")
@@ -273,6 +274,69 @@ async def api_decision_memo(request: DecisionMemoRequest):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+class SequentialAnalysisRequest(BaseModel):
+    control_users: int
+    control_conversions: int
+    treatment_users: int
+    treatment_conversions: int
+    target_sample_size: int
+    current_look: int
+    max_looks: int = 5
+    alpha: float = 0.05
+    boundary_type: str = "obrien_fleming"
+    previous_looks: list[dict[str, Any]] | None = None
+
+
+@app.post("/api/sequential-analysis")
+async def api_sequential_analysis(request: SequentialAnalysisRequest):
+    """Run sequential analysis for early stopping decision."""
+    try:
+        result = analyze_sequential(
+            control_users=request.control_users,
+            control_conversions=request.control_conversions,
+            treatment_users=request.treatment_users,
+            treatment_conversions=request.treatment_conversions,
+            target_sample_size=request.target_sample_size,
+            current_look=request.current_look,
+            max_looks=request.max_looks,
+            alpha=request.alpha,
+            boundary_type=request.boundary_type,
+            previous_looks=request.previous_looks,
+        )
+        return sanitize({"status": "success", **result})
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/sequential-boundaries")
+async def api_sequential_boundaries(
+    max_looks: int = 5,
+    alpha: float = 0.05,
+    boundary_type: str = "obrien_fleming",
+):
+    """Get boundary values for visualization/planning."""
+    try:
+        boundaries = calculate_boundaries(
+            max_looks=max_looks,
+            alpha=alpha,
+            boundary_type=boundary_type,
+        )
+        return sanitize({
+            "boundaries": boundaries,
+            "config": {
+                "max_looks": max_looks,
+                "alpha": alpha,
+                "boundary_type": boundary_type,
+            },
+        })
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn

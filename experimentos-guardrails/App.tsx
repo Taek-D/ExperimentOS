@@ -6,6 +6,7 @@ import { FileUpload } from './components/FileUpload';
 import { ExperimentMetadata } from './components/ExperimentMetadata';
 import { DecisionMemo } from './components/DecisionMemo';
 import { PowerCalculator } from './components/PowerCalculator';
+import SequentialMonitor from './components/SequentialMonitor';
 import { IntegrationConnect } from './components/IntegrationConnect';
 import { ExperimentSelector } from './components/ExperimentSelector';
 import TourOverlay from './components/TourOverlay';
@@ -13,12 +14,13 @@ import { useTour } from './hooks/useTour';
 import Icon from './components/Icon';
 import { DEMO_HEALTH_RESULT, DEMO_ANALYSIS_RESULT, DEMO_BAYESIAN_INSIGHTS, DEMO_MULTIVARIANT_HEALTH, DEMO_MULTIVARIANT_ANALYSIS, DEMO_MULTIVARIANT_BAYESIAN } from './data/demoData';
 
-type PageType = 'analysis' | 'memo' | 'calculator';
+type PageType = 'analysis' | 'memo' | 'calculator' | 'sequential';
 
 const NAV_ITEMS: { id: PageType; label: string; icon: string }[] = [
   { id: 'analysis', label: 'Analysis', icon: 'analytics' },
   { id: 'memo', label: 'Memo', icon: 'description' },
   { id: 'calculator', label: 'Calculator', icon: 'calculate' },
+  { id: 'sequential', label: 'Sequential', icon: 'monitoring' },
 ];
 
 const App: React.FC = () => {
@@ -212,7 +214,7 @@ const App: React.FC = () => {
           </span>
         </div>
 
-        {hasResults && (
+        {(hasResults || currentPage === 'sequential') && (
           <nav className="flex items-center gap-1" data-tour="nav-tabs">
             {NAV_ITEMS.map((item) => (
               <button
@@ -253,7 +255,14 @@ const App: React.FC = () => {
 
       {/* Main content area */}
       <main className="flex-1 overflow-hidden">
-        {!hasResults ? (
+        {currentPage === 'sequential' ? (
+          /* ── Sequential Monitor (standalone) ── */
+          <div className="h-full overflow-y-auto custom-scrollbar">
+            <div className="max-w-4xl mx-auto px-5 py-8">
+              <SequentialMonitor />
+            </div>
+          </div>
+        ) : !hasResults ? (
           /* ── Landing / Upload State ── */
           <div className="h-full overflow-y-auto custom-scrollbar">
             <div className="max-w-2xl mx-auto px-5 py-12 flex flex-col items-center gap-8">

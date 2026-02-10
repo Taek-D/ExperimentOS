@@ -13,6 +13,7 @@ def make_decision(
     health: dict,
     primary: dict,
     guardrails: list[dict] | dict,
+    sequential: dict | None = None,
 ) -> dict:
     """
     Decision Framework 룰 기반 의사결정
@@ -21,6 +22,8 @@ def make_decision(
         health: Health Check 결과 dict
         primary: Primary 분석 결과 dict
         guardrails: Guardrail 분석 결과 list[dict] (2-variant) 또는 dict (multi-variant)
+        sequential: Optional sequential testing 결과 dict.
+                   If provided and can_stop=False, forces Hold decision.
 
     Returns:
         dict: {
@@ -30,6 +33,18 @@ def make_decision(
             "best_variant": str | None  (multi-variant only)
         }
     """
+    # 룰 0: Sequential Testing — 조기 종료 불가 시 무조건 Hold
+    if sequential is not None and not sequential.get("can_stop", True):
+        return {
+            "decision": "Hold",
+            "reason": "Sequential Testing: 추가 데이터 수집 필요",
+            "details": [
+                sequential.get("message", "중간 분석 결과, 아직 결론을 내릴 수 없습니다."),
+                f"현재 Look: {sequential.get('current_look', '?')}/{sequential.get('max_looks', '?')}",
+                f"Information Fraction: {sequential.get('info_fraction', 0):.1%}",
+            ],
+        }
+
     # 룰 1: Blocked (스키마/논리 오류 또는 Severe SRM)
     if health["overall_status"] == "Blocked":
         return {
@@ -234,6 +249,7 @@ def generate_memo(
     guardrails: list[dict] | dict,
     bayesian_insights: dict | None = None,
     charter: dict | None = None,
+    sequential: dict | None = None,
 ) -> str:
     """
     Decision Memo (1pager) Markdown 생성
@@ -407,14 +423,44 @@ def generate_memo(
 
 
     
-    # 7. Assumptions & Thresholds (새로 추가)
+    # 7. Sequential Testing Summary
+    sequential_section = ""
+    if sequential is not None:
+        seq_result = sequential.get("sequential_result", sequential)
+        boundary_type_display = {
+            "obrien_fleming": "O'Brien-Fleming",
+            "pocock": "Pocock",
+        }.get(str(seq_result.get("boundary_type", "")), str(seq_result.get("boundary_type", "N/A")))
+
+        status_map = {
+            "reject_null": "Early stopping justified",
+            "continue": "Continue collecting data",
+            "fail_to_reject": "No significant difference found",
+        }
+        seq_status = status_map.get(seq_result.get("decision", ""), "Unknown")
+
+        sequential_section = f"""
+---
+
+## 🔄 Sequential Testing Summary
+
+- **Boundary Type**: {boundary_type_display}
+- **Current Look**: {seq_result.get('current_look', '?')} / {seq_result.get('max_looks', '?')}
+- **Information Fraction**: {seq_result.get('info_fraction', 0):.1%}
+- **Z-statistic**: {seq_result.get('z_stat', 0):.3f} (Boundary: {seq_result.get('z_boundary', 0):.3f})
+- **Status**: {seq_status}
+- **Alpha Spent**: {seq_result.get('cumulative_alpha_spent', 0):.4f} / {0.05}
+- **Note**: Type I Error rate is controlled at alpha = 0.05 across all looks.
+"""
+
+    # 8. Assumptions & Thresholds
     from .config import config
     assumptions = config.get_assumptions_text()
-    
+
     # 조합
-    memo = (md_content + primary_section + guardrail_section + 
-            health_section + decision_details_section + 
-            next_actions + evidence_section + assumptions)
+    memo = (md_content + primary_section + guardrail_section +
+            health_section + decision_details_section +
+            next_actions + evidence_section + sequential_section + assumptions)
     
     return memo
 

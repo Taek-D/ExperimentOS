@@ -42,6 +42,14 @@ test_output.txt
 .mypy_cache/
 .pytest_cache/
 
+# 대용량 데이터셋 (Kaggle 등)
+notebooks/marketing_AB.csv
+
+# bkit 내부 상태
+docs/.bkit-memory.json
+docs/.pdca-snapshots/
+docs/.pdca-status.json
+
 # 빌드 산출물
 build/
 dist/

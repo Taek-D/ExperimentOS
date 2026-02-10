@@ -276,6 +276,36 @@ export const listExperiments = async (provider: string): Promise<Experiment[]> =
     return response.data;
 };
 
+// ===== Sequential Testing API =====
+import type { SequentialParams, SequentialAnalysisResponse, BoundaryPoint } from '../types';
+
+export const runSequentialAnalysis = async (params: SequentialParams): Promise<SequentialAnalysisResponse> => {
+    const response = await apiClient.post<SequentialAnalysisResponse>('/sequential-analysis', {
+        control_users: params.controlUsers,
+        control_conversions: params.controlConversions,
+        treatment_users: params.treatmentUsers,
+        treatment_conversions: params.treatmentConversions,
+        target_sample_size: params.targetSampleSize,
+        current_look: params.currentLook,
+        max_looks: params.maxLooks,
+        alpha: params.alpha,
+        boundary_type: params.boundaryType,
+        previous_looks: params.previousLooks,
+    });
+    return response.data;
+};
+
+export const getSequentialBoundaries = async (
+    maxLooks: number = 5,
+    alpha: number = 0.05,
+    boundaryType: string = 'obrien_fleming',
+): Promise<{ boundaries: BoundaryPoint[]; config: { max_looks: number; alpha: number; boundary_type: string } }> => {
+    const response = await apiClient.get('/sequential-boundaries', {
+        params: { max_looks: maxLooks, alpha, boundary_type: boundaryType },
+    });
+    return response.data;
+};
+
 export const analyzeExperiment = async (provider: string, experimentId: string, guardrails?: string[]): Promise<AnalysisResponse> => {
     const params = new URLSearchParams();
     if (guardrails && guardrails.length > 0) {

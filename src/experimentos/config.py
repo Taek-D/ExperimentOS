@@ -57,6 +57,16 @@ class ExperimentConfig:
     BAYES_SEED: int = 42
     """베이지안 시뮬레이션 난수 시드 (Deterministic)"""
 
+    # ===== Sequential Testing Settings =====
+    SEQUENTIAL_MAX_LOOKS: int = 5
+    """기본 최대 중간 분석 횟수"""
+
+    SEQUENTIAL_BOUNDARY_TYPE: str = "obrien_fleming"
+    """기본 경계 함수 타입 ('obrien_fleming' | 'pocock')"""
+
+    SEQUENTIAL_ENABLED: bool = True
+    """Sequential testing 기능 활성화"""
+
     # ===== UI Configuration =====
     HYPOTHESIS_TEXT_AREA_HEIGHT: int = 100
     """가설 입력 텍스트 영역 높이 (px)"""

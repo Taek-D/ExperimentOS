@@ -8,7 +8,7 @@ description: React 프론트엔드 구조, 컴포넌트, 스타일링. Use when 
 ## 기술 스택
 
 - **React 19** + **TypeScript 5.8** (strict mode)
-- **Vite 6.2** (빌드 도구)
+- **Vite 6.4** (빌드 도구)
 - **Tailwind CSS v4** (스타일링)
 - **Axios** (HTTP 클라이언트)
 
@@ -23,7 +23,7 @@ experimentos-guardrails/
 ├── api/
 │   └── client.ts              # Axios API 클라이언트
 ├── components/
-│   ├── Dashboard.tsx          # 분석 결과 대시보드
+│   ├── Dashboard.tsx          # 분석 결과 대시보드 (Multi-variant 분기)
 │   ├── DecisionMemo.tsx       # 의사결정 메모 표시/다운로드
 │   ├── PowerCalculator.tsx    # 검정력/표본 크기 계산기
 │   ├── ExperimentSelector.tsx # 연동 실험 목록에서 선택
@@ -35,7 +35,20 @@ experimentos-guardrails/
 │   ├── MetricsTable.tsx       # Primary/Guardrail 메트릭 테이블
 │   ├── Sidebar.tsx            # 사이드바 네비게이션
 │   ├── StatsCard.tsx          # 통계 요약 카드
-│   └── Icon.tsx               # Material Symbols 아이콘
+│   ├── TourOverlay.tsx        # 가이드 투어 오버레이
+│   ├── GlossaryTerm.tsx       # 용어집 호버 툴팁
+│   ├── Icon.tsx               # Material Symbols 아이콘
+│   └── charts/
+│       ├── ForestPlot.tsx     # Forest Plot (Multi-variant 포인트)
+│       ├── PosteriorDistribution.tsx  # 베이지안 사후 분포
+│       ├── PowerCurve.tsx     # 검정력 곡선
+│       ├── chartTheme.ts      # 차트 색상 + VARIANT_COLORS 팔레트
+│       └── chartUtils.ts      # 차트 유틸리티 함수
+├── data/
+│   ├── demoData.ts            # 데모 데이터 (2-variant + Multi-variant)
+│   └── glossary.ts            # 통계 용어 정의
+├── hooks/
+│   └── useTour.ts             # 투어 상태 관리 훅
 ├── vite.config.ts
 ├── tsconfig.json              # strict: true
 ├── eslint.config.js
