@@ -1,7 +1,7 @@
 # ExperimentOS Architecture
 
 > This document is the **single source of truth** for ExperimentOS structure, conventions, and extension points.
-> Last updated: 2026-02-06
+> Last updated: 2026-02-11
 
 ## 1. Tech Stack
 
@@ -51,6 +51,7 @@
 │   ├── bayesian.py                 # Beta-Binomial + continuous posterior (multi-variant)
 │   ├── power.py                    # Sample size / power calculator utilities
 │   ├── memo.py                     # Decision rules + memo generation (multi-variant)
+│   ├── sequential.py               # Sequential testing (O'Brien-Fleming alpha spending)
 │   └── integrations/               # External platform integrations
 │       ├── base.py                 # Base provider interface
 │       ├── registry.py             # Provider registry
@@ -81,8 +82,10 @@
 │   │   ├── PowerCalculator.tsx    # Power calculator
 │   │   ├── StatsCard.tsx          # Stats summary cards
 │   │   ├── TourOverlay.tsx        # Guided tour overlay
+│   │   ├── SequentialMonitor.tsx  # Sequential testing monitor
 │   │   └── charts/
 │   │       ├── ForestPlot.tsx     # Forest plot (multi-variant points)
+│   │       ├── BoundaryChart.tsx  # Sequential boundary visualization
 │   │       └── chartTheme.ts      # Chart colors + VARIANT_COLORS palette
 │   ├── data/demoData.ts           # Demo data (2-variant + multi-variant)
 │   ├── hooks/useTour.ts           # Tour state management hook
@@ -96,7 +99,7 @@
 │   ├── 3_Results.py
 │   └── 4_Decision_Memo.py
 │
-├── tests/                          # Unit tests (152 tests)
+├── tests/                          # Unit tests (209 tests)
 │   ├── test_decision.py            # Decision regression (never break)
 │   ├── test_decision_branches.py   # Decision branching regression
 │   ├── test_analysis.py            # Core analysis tests
@@ -104,7 +107,15 @@
 │   ├── test_multivariant_guardrails.py        # Multi-variant guardrails
 │   ├── test_multivariant_bayesian.py          # Multi-variant Bayesian
 │   ├── test_multivariant_decision.py          # Multi-variant decisions
+│   ├── test_sequential.py          # Sequential testing (36 tests)
+│   ├── test_sequential_boundaries.py # Sequential boundaries (21 tests)
 │   └── ...                         # healthcheck, bayesian, continuous, power, etc.
+│
+├── notebooks/                      # Jupyter notebooks (case studies & simulations)
+│   ├── case-study-marketing-ab-test.ipynb     # 588K real data HTE analysis
+│   ├── case-study-marketing-sql-analysis.ipynb # SQL(DuckDB) analysis patterns
+│   ├── case-study-srm-detection.ipynb         # SRM false positive detection
+│   └── simulation-sequential-boundaries.ipynb # OBF vs Pocock Monte Carlo
 │
 ├── app.py                          # Streamlit entry point
 ├── generate_demo_csvs.py           # Sample CSV generator
@@ -170,6 +181,9 @@ bayesian.py
 memo.py
     2-variant: make_decision(primary, guardrails)
     N-variant: _make_decision_multivariant(primary, guardrails)
+    ↓
+sequential.py (optional: interim analysis)
+    alpha_spending() → calculate_boundaries() → check_sequential()
     ↓
 Frontend (TypeScript union types + type guards)
     isMultiVariantPrimary(r) → MultiVariantPrimaryResult
@@ -283,12 +297,16 @@ Decision Memo UI (Download MD/HTML)
    - `test_multivariant_decision.py`: multi-variant decision rules (5 cases + memo generation)
    - `test_analysis_multivariant_overall.py`: chi-square overall test
 
-3) **Unit tests for math modules**
+3) **Sequential testing tests**
+   - `test_sequential.py`: alpha spending, boundaries, sequential check (36 tests)
+   - `test_sequential_boundaries.py`: boundary API, edge cases (21 tests)
+
+5) **Unit tests for math modules**
    - `test_continuous_analysis.py`: Welch + CI + edge cases
    - `test_bayesian.py`: smoke + deterministic seed checks
    - `test_power.py`: monotonicity, ratio smoke
 
-4) **Healthcheck schema tests**
+6) **Healthcheck schema tests**
    - Missing columns, partial variant completeness, continuous constraints
 
 ### Determinism Rules (for Bayesian tests)
@@ -297,8 +315,9 @@ Decision Memo UI (Download MD/HTML)
 
 ### Running Tests
 ```bash
-python -m pytest tests/ -v          # All 152 tests
+python -m pytest tests/ -v          # All 209 tests
 python -m pytest tests/test_multivariant_*.py -v  # Multi-variant only
+python -m pytest tests/test_sequential*.py -v     # Sequential testing only
 ```
 
 ---

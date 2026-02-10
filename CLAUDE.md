@@ -74,6 +74,7 @@ npm run lint
 │   ├── bayesian.py             # Beta-Binomial / posterior simulations
 │   ├── continuous_analysis.py  # Welch t-test from sufficient statistics
 │   ├── memo.py                 # Decision rules + memo generation
+│   ├── sequential.py           # Sequential testing (O'Brien-Fleming)
 │   ├── power.py                # Sample size / power calculator
 │   ├── state.py                # Streamlit session state helpers
 │   ├── logger.py               # Logging setup
@@ -114,12 +115,14 @@ npm run lint
 │   │   ├── MetricsTable.tsx
 │   │   ├── PowerCalculator.tsx
 │   │   ├── Sidebar.tsx
-│   │   └── StatsCard.tsx
+│   │   ├── StatsCard.tsx
+│   │   └── SequentialMonitor.tsx
 │   ├── vite.config.ts          # Vite config
 │   ├── tsconfig.json           # TypeScript config
 │   └── eslint.config.js        # ESLint config
 │
-├── tests/                      # pytest unit tests (20+ test files)
+├── notebooks/                  # Jupyter notebooks (case studies & simulations)
+├── tests/                      # pytest unit tests (27 test files, 209 tests)
 ├── .claude/                    # Claude Code configuration
 │   ├── commands/               # Custom slash commands
 │   ├── agents/                 # Agent definitions

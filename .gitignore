@@ -50,6 +50,12 @@ docs/.bkit-memory.json
 docs/.pdca-snapshots/
 docs/.pdca-status.json
 
+# Playwright MCP
+.playwright-mcp/
+
+# Node.js
+node_modules/
+
 # 빌드 산출물
 build/
 dist/
