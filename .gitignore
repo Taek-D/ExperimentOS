@@ -44,11 +44,18 @@ test_output.txt
 
 # 대용량 데이터셋 (Kaggle 등)
 notebooks/marketing_AB.csv
+notebooks/online_retail.csv
+
+# 노트북 생성 이미지 (nbconvert 실행 시 재생성)
+notebooks/*.png
 
 # bkit 내부 상태
 docs/.bkit-memory.json
 docs/.pdca-snapshots/
 docs/.pdca-status.json
+
+# Claude Code agent memory
+.claude/agent-memory/
 
 # Playwright MCP
 .playwright-mcp/

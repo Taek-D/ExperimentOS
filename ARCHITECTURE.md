@@ -114,6 +114,8 @@
 ├── notebooks/                      # Jupyter notebooks (case studies & simulations)
 │   ├── case-study-marketing-ab-test.ipynb     # 588K real data HTE analysis
 │   ├── case-study-marketing-sql-analysis.ipynb # SQL(DuckDB) analysis patterns
+│   ├── case-study-cohort-retention.ipynb      # Cohort retention & LTV analysis
+│   ├── case-study-funnel-analysis.ipynb       # Funnel conversion bottleneck
 │   ├── case-study-srm-detection.ipynb         # SRM false positive detection
 │   └── simulation-sequential-boundaries.ipynb # OBF vs Pocock Monte Carlo
 │

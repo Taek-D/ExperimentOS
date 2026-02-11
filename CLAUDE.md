@@ -121,7 +121,7 @@ npm run lint
 │   ├── tsconfig.json           # TypeScript config
 │   └── eslint.config.js        # ESLint config
 │
-├── notebooks/                  # Jupyter notebooks (case studies & simulations)
+├── notebooks/                  # Jupyter notebooks (6 case studies & simulations)
 ├── tests/                      # pytest unit tests (27 test files, 209 tests)
 ├── .claude/                    # Claude Code configuration
 │   ├── commands/               # Custom slash commands
