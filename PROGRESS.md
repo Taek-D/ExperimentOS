@@ -9,10 +9,11 @@
 | Feature | Match Rate | 완료일 | 아카이브 |
 |---------|:----------:|--------|----------|
 | sequential-testing | 93.7% | 2026-02-10 | `docs/archive/2026-02/sequential-testing/` |
+| portfolio-enhancement | ~97% | 2026-02-11 | `docs/archive/2026-02/portfolio-enhancement/` |
 
 ## 현재 PDCA (활성)
 
-_없음 — 새 기능을 `/pdca plan {feature}`로 시작하세요._
+없음 (모든 PDCA 완료)
 
 ---
 
