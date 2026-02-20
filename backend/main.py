@@ -71,7 +71,6 @@ from src.experimentos.sequential import analyze_sequential, calculate_boundaries
 # Import integrations to register providers
 import src.experimentos.integrations.statsig
 import src.experimentos.integrations.growthbook
-import src.experimentos.integrations.hackle
 from backend.routers import integrations
 
 app = FastAPI(title="ExperimentOS API", default_response_class=SafeJSONResponse)

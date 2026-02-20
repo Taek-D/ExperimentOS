@@ -1,4 +1,3 @@
-from typing import List, Dict, Any, Optional
 import httpx
 import logging
 
@@ -40,7 +39,7 @@ class HackleProvider(IntegrationProvider):
     def provider_name(self) -> str:
         return "hackle"
 
-    def list_experiments(self) -> List[ExperimentSummary]:
+    def list_experiments(self) -> list[ExperimentSummary]:
         """
         List experiments from Hackle.
         

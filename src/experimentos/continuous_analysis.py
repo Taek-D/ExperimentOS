@@ -5,16 +5,15 @@ Welch's t-test implementation for continuous metrics using sufficient statistics
 Inputs: metric_sum, metric_sum_sq, n for control and treatment.
 """
 
-from typing import Dict, Tuple
 import numpy as np
 from scipy import stats
 from .config import config
 
 def calculate_continuous_lift(
-    control_stats: Dict[str, float],
-    treatment_stats: Dict[str, float],
+    control_stats: dict[str, float],
+    treatment_stats: dict[str, float],
     metric_name: str
-) -> Dict:
+) -> dict:
     """
     Calculate lift and statistical significance for a continuous metric.
     
@@ -114,7 +113,7 @@ def calculate_continuous_lift(
         "is_significant": p_value < config.SIGNIFICANCE_ALPHA
     }
 
-def _empty_result(name: str, reason: str) -> Dict:
+def _empty_result(name: str, reason: str) -> dict:
     return {
         "metric_name": name,
         "is_valid": False,

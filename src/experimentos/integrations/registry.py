@@ -1,17 +1,16 @@
-from typing import Dict, Type, Optional
 from .base import IntegrationProvider, ProviderNotFoundError
 
 class IntegrationRegistry:
     """Registry to manage and retrieve integration providers."""
-    _providers: Dict[str, Type[IntegrationProvider]] = {}
+    _providers: dict[str, type[IntegrationProvider]] = {}
 
     @classmethod
-    def register(cls, name: str, provider_cls: Type[IntegrationProvider]):
+    def register(cls, name: str, provider_cls: type[IntegrationProvider]):
         """Register a new provider."""
         cls._providers[name] = provider_cls
 
     @classmethod
-    def get_provider_class(cls, name: str) -> Type[IntegrationProvider]:
+    def get_provider_class(cls, name: str) -> type[IntegrationProvider]:
         """Get a provider class by name."""
         provider = cls._providers.get(name)
         if not provider:

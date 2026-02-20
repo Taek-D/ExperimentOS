@@ -2,7 +2,6 @@ import time
 import functools
 import logging
 import random
-from typing import Tuple, Type
 import httpx
 
 logger = logging.getLogger(__name__)
@@ -11,7 +10,7 @@ def retry_request(
     max_retries: int = 3,
     base_delay: float = 0.5,
     backoff_factor: float = 2.0,
-    retryable_status_codes: Tuple[int, ...] = (429, 500, 502, 503, 504)
+    retryable_status_codes: tuple[int, ...] = (429, 500, 502, 503, 504)
 ):
     """
     Decorator to retry a function (usually an API request) on failure.

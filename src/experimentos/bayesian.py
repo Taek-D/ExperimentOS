@@ -6,7 +6,6 @@ Logic is strictly informational and does NOT affect decision rules.
 Uses deterministic simulation with fixed seed.
 """
 
-from typing import Dict, Tuple
 import numpy as np
 from scipy import stats
 from .config import config
@@ -16,7 +15,7 @@ def calculate_beta_binomial(
     control_total: int,
     treatment_conversions: int,
     treatment_total: int
-) -> Dict:
+) -> dict:
     """
     Calculate P(Treatment > Control) using Beta-Binomial model.
     Prior: Beta(1, 1) [Uniform]
@@ -105,9 +104,9 @@ def calculate_beta_binomial_multivariant(
 
 
 def calculate_continuous_bayes(
-    control_stats: Dict,
-    treatment_stats: Dict
-) -> Dict:
+    control_stats: dict,
+    treatment_stats: dict
+) -> dict:
     """
     Calculate P(Treatment > Control) for continuous metrics.
     Approximate using Normal distribution of means with simulated sampling.

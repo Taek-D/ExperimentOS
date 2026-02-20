@@ -2,24 +2,24 @@ import os
 import time
 import json
 import logging
-from typing import Optional, Any, Dict
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
 class CacheBackend:
     """Abstract base class for cache backends."""
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         raise NotImplementedError
-    
+
     def set(self, key: str, value: Any, ttl: int) -> None:
         raise NotImplementedError
 
 class InMemoryCache(CacheBackend):
     """Simple in-memory cache using a dictionary."""
     def __init__(self):
-        self._store: Dict[str, tuple] = {}
-    
-    def get(self, key: str) -> Optional[Any]:
+        self._store: dict[str, tuple] = {}
+
+    def get(self, key: str) -> Any | None:
         if key in self._store:
             val, expiry = self._store[key]
             if time.time() < expiry:
@@ -45,7 +45,7 @@ class RedisCache(CacheBackend):
         except Exception as e:
             raise ConnectionError(f"Failed to connect to Redis: {e}")
 
-    def get(self, key: str) -> Optional[Any]:
+    def get(self, key: str) -> Any | None:
         try:
             val = self.client.get(key)
             return json.loads(val) if val else None

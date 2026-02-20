@@ -1,5 +1,4 @@
 import pandas as pd
-from typing import List, Dict
 from .schema import IntegrationResult
 
 def to_experiment_df(result: IntegrationResult) -> pd.DataFrame:

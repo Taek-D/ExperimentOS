@@ -1,7 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Path, Query
-from typing import List, Optional, Any
+from typing import Any
+import logging
 import pandas as pd
 from pydantic import BaseModel
+
+logger = logging.getLogger("experimentos")
 
 from src.experimentos.integrations.registry import registry
 from src.experimentos.integrations.base import IntegrationError, ProviderNotFoundError, ProviderAuthError
@@ -22,7 +25,7 @@ router = APIRouter(
 )
 
 # Request-scoped API Key dependency
-def get_api_key(x_integration_api_key: Optional[str] = Header(None, description="API Key for the provider")):
+def get_api_key(x_integration_api_key: str | None = Header(None, description="API Key for the provider")):
     if not x_integration_api_key:
         raise HTTPException(status_code=401, detail="X-Integration-Api-Key header is required")
     return x_integration_api_key
@@ -37,8 +40,8 @@ class AnalysisResponse(BaseModel):
     status: str
     experiment_id: str
     provider: str
-    is_multivariant: Optional[bool] = None
-    variant_count: Optional[int] = None
+    is_multivariant: bool | None = None
+    variant_count: int | None = None
     primary_result: Any
     guardrail_results: Any = None
 
@@ -48,7 +51,7 @@ def _is_multivariant(df: pd.DataFrame) -> bool:
     variants = df["variant"].unique()
     return len(variants) > 2 or "treatment" not in variants
 
-@router.get("/{provider}/experiments", response_model=List[ExperimentResponse])
+@router.get("/{provider}/experiments", response_model=list[ExperimentResponse])
 async def list_experiments(
     provider: str = Path(..., description="Provider name (e.g., statsig, dummy)"),
     api_key: str = Depends(get_api_key)
@@ -82,7 +85,7 @@ async def list_experiments(
 async def analyze_experiment(
     provider: str = Path(..., description="Provider name"),
     experiment_id: str = Path(..., description="Experiment ID"),
-    guardrails: Optional[str] = Query(None, description="Comma-separated list of guardrail metrics"),
+    guardrails: str | None = Query(None, description="Comma-separated list of guardrail metrics"),
     api_key: str = Depends(get_api_key)
 ):
     """
@@ -147,6 +150,5 @@ async def analyze_experiment(
     except IntegrationError as e:
         raise HTTPException(status_code=502, detail=f"Integration Error: {str(e)}")
     except Exception as e:
-        # Log the full error in a real app
-        print(f"Error analyzing experiment: {e}") 
+        logger.error("Error analyzing experiment: %s", e)
         raise HTTPException(status_code=500, detail=f"Internal Server Error: {str(e)}")

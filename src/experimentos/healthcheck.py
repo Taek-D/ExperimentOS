@@ -6,7 +6,6 @@ CSV 데이터의 스키마 검증 및 SRM(Sample Ratio Mismatch) 탐지
 
 import pandas as pd
 from scipy import stats
-from typing import Optional
 import logging
 
 from .config import SRM_WARNING_THRESHOLD, SRM_BLOCKED_THRESHOLD, MIN_SAMPLE_SIZE_WARNING, config
@@ -200,7 +199,7 @@ def validate_continuous_schema(df: pd.DataFrame, issues: list[str]) -> str:
 
 def detect_srm(
     variants_data: dict[str, int],
-    expected_split: Optional[list[float]] = None,
+    expected_split: list[float] | None = None,
     warning_threshold: float = SRM_WARNING_THRESHOLD,
     blocked_threshold: float = SRM_BLOCKED_THRESHOLD
 ) -> dict:
@@ -303,7 +302,7 @@ def detect_srm(
 
 def run_health_check(
     df: pd.DataFrame,
-    expected_split: Optional[list[float]] = None
+    expected_split: list[float] | None = None
 ) -> dict:
     """
     전체 Health Check 실행 (스키마 검증 + SRM 탐지)

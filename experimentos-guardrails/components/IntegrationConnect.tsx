@@ -4,7 +4,6 @@ import Icon from './Icon';
 const PROVIDERS = [
     { id: 'statsig', name: 'Statsig' },
     { id: 'growthbook', name: 'GrowthBook' },
-    { id: 'hackle', name: 'Hackle' },
 ] as const;
 
 export const IntegrationConnect: React.FC = () => {

@@ -15,5 +15,6 @@ class NumpyEncoder(json.JSONEncoder):
         return super().default(obj)
 
 def sanitize(obj):
-    """Convert numpy types to native Python types for JSON serialization."""
-    return json.loads(json.dumps(obj, cls=NumpyEncoder))
+    """Convert numpy types to native Python types and replace NaN/Inf with None."""
+    text = json.dumps(obj, cls=NumpyEncoder, allow_nan=True)
+    return json.loads(text, parse_constant=lambda _: None)

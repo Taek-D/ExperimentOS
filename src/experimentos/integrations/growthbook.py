@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, Optional
+from typing import Any
 import httpx
 import logging
 from datetime import datetime
@@ -38,7 +38,7 @@ class GrowthBookProvider(IntegrationProvider):
         self.cache = get_cache()
 
     @retry_request(max_retries=3, base_delay=0.5, backoff_factor=2.0)
-    def _make_get_request(self, url: str) -> Dict[str, Any]:
+    def _make_get_request(self, url: str) -> dict[str, Any]:
         """Helper to make GET requests with error handling."""
         with httpx.Client(timeout=self.timeout) as client:
             response = client.get(url, headers=self.headers)
@@ -56,7 +56,7 @@ class GrowthBookProvider(IntegrationProvider):
     def provider_name(self) -> str:
         return "growthbook"
 
-    def list_experiments(self) -> List[ExperimentSummary]:
+    def list_experiments(self) -> list[ExperimentSummary]:
         """
         List experiments from GrowthBook.
         Endpoint: GET /experiments

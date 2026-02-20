@@ -1,4 +1,3 @@
-from typing import List, Dict, Any
 from .base import IntegrationProvider, ExperimentSummary, ProviderNotFoundError, IntegrationError, ProviderAuthError
 from .schema import IntegrationResult, IntegrationVariant
 
@@ -17,7 +16,7 @@ class DummyProvider(IntegrationProvider):
     def provider_name(self) -> str:
         return "dummy"
 
-    def list_experiments(self) -> List[ExperimentSummary]:
+    def list_experiments(self) -> list[ExperimentSummary]:
         return [
             ExperimentSummary(id="exp_001", name="Checkout Redesign", status="running"),
             ExperimentSummary(id="exp_002", name="Search Algorithm V2", status="stopped"),

@@ -31,7 +31,7 @@ const TOUR_STEPS: TourStep[] = [
     target: '[data-tour="integration"]',
     title: 'Connect an Integration',
     description:
-      'Optionally connect Statsig, GrowthBook, or Hackle to import experiment results directly from your platform.',
+      'Optionally connect Statsig or GrowthBook to import experiment results directly from your platform.',
   },
   {
     id: 'file-upload',

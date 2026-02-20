@@ -63,7 +63,7 @@ const App: React.FC = () => {
       const provider = localStorage.getItem('integration_provider');
       if (!provider) return;
 
-      console.log('Auto-syncing experiment:', activeExperimentId);
+      // Auto-sync experiment data from integration provider
       try {
         const result = await analyzeExperiment(provider, activeExperimentId);
         setAnalysisResult(result);

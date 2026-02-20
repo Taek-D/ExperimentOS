@@ -1,4 +1,4 @@
-from typing import List, Protocol, Optional, Dict, Any, Union
+from typing import Any, Protocol
 from dataclasses import dataclass, field
 from datetime import datetime
 import abc
@@ -11,12 +11,12 @@ class ExperimentSummary:
     id: str
     name: str
     status: str  # e.g., 'running', 'stopped'
-    last_updated: Optional[datetime] = None
+    last_updated: datetime | None = None
     provider: str = "" # populated by the service wrapper
 
 class IntegrationError(Exception):
     """Base exception for all integration errors."""
-    def __init__(self, message: str, provider: str, details: Optional[Dict[str, Any]] = None):
+    def __init__(self, message: str, provider: str, details: dict[str, Any] | None = None):
         super().__init__(message)
         self.provider = provider
         self.details = details or {}
@@ -48,7 +48,7 @@ class IntegrationProvider(Protocol):
     """
     
     @abc.abstractmethod
-    def list_experiments(self) -> List[ExperimentSummary]:
+    def list_experiments(self) -> list[ExperimentSummary]:
         """List all available experiments from the provider."""
         raise NotImplementedError
 
