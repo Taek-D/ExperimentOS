@@ -123,15 +123,6 @@ async def api_health_check(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-class AnalysisRequest(BaseModel):
-    # We might need to receive the file content again or store it temporarily.
-    # For a stateless MVP without DB, the React app should probably send the file content 
-    # OR we handle upload and analysis in one go? 
-    # Better yet: frontend performs health check, if green, user clicks "Analyze", 
-    # frontend sends the file AGAIN (or the same file object).
-    # Since we are modifying the architecture to be stateless, let's accept file upload for analysis too.
-    pass
-
 @app.post("/api/analyze")
 async def api_analyze(file: UploadFile = File(...), guardrails: str | None = None):
     # guardrails: comma separated list of columns, or None for auto-detect

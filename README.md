@@ -1,7 +1,21 @@
 # ExperimentOS — A/B 실험 의사결정 자동화 플랫폼
 
-A/B 테스트에서 "전환율이 올랐다"는 숫자만 보고 출시하면 위험합니다.
-ExperimentOS는 **검증 표준화 + 의사결정 자동화**를 통해 이런 실수를 구조적으로 방지합니다.
+## Why I Built This
+
+A/B 테스트 결과를 리뷰하면서 반복적으로 같은 실수를 목격했습니다.
+
+- p-value만 보고 출시했는데, 트래픽 분배 자체가 깨져 있었음 (SRM)
+- 전환율은 올랐지만 오류율이 급증한 걸 아무도 체크하지 않았음
+- "유의하다/유의하지 않다"만 전달되고, **왜 그런지, 다음에 뭘 해야 하는지**는 사람마다 달랐음
+- 3개 이상 variant를 비교하면서 다중비교 보정 없이 "가장 높은 variant가 승자"라고 결론냈음
+
+이런 문제들은 분석 역량의 문제가 아니라, **프로세스의 문제**였습니다. 검증 단계가 표준화되어 있지 않으면 누구든 실수할 수 있습니다.
+
+ExperimentOS는 이 문제의식에서 출발했습니다:
+
+> **"A/B 테스트의 검증 프로세스를 코드로 표준화하면, 의사결정 품질을 구조적으로 높일 수 있다."**
+
+SRM 체크 → 통계 분석 → Guardrail 검증 → 규칙 기반 의사결정까지, 수동으로 하면 빠뜨리기 쉬운 단계들을 하나의 파이프라인으로 자동화했습니다. 모든 임계값에는 [학술 근거](./docs/design-rationale.md)를 붙였고, Bayesian 결과는 "설명용으로만" 제공하되 의사결정은 frequentist + guardrail 규칙에만 의존하도록 설계했습니다.
 
 ```
 CSV 업로드 → Health Check (SRM/스키마) → 통계 분석 (z-test/Bayesian)
@@ -14,7 +28,18 @@ CSV 업로드 → Health Check (SRM/스키마) → 통계 분석 (z-test/Bayesia
 
 ## Analysis Case Studies
 
-### 1. Marketing A/B Test — 588K 유저 HTE 분석
+### 1. Fashion Recsys A/B Test — 추천 알고리즘 실험 시뮬레이션
+
+**시나리오**: 패션 이커머스에서 기존 CF 추천 vs 하이브리드 추천(CF + 이미지 임베딩)을 비교
+**데이터**: 시뮬레이션 (50K users, 3 segments) | **기법**: SRM, z-test, Guardrail(반품률), HTE by 유저 세그먼트, ROI 추정
+
+**핵심 발견**: 전체 CTR +2.5%p 유의하지만, 세그먼트별 효과 차이가 큼 — 헤비유저에서 가장 강하고, 신규유저에서 약함
+**비즈니스 임팩트**: 월 증분 매출 ₩280M 추정, 반품률 소폭 악화 감안 시 순 임팩트 ₩264M
+**의사결정**: 조건부 Launch (반품률 모니터링 대시보드 병행)
+
+[Notebook](./notebooks/case-study-fashion-recsys-ab-test.ipynb)
+
+### 2. Marketing A/B Test — 588K 유저 HTE 분석
 
 **데이터**: Kaggle Marketing A/B Testing (588,101 users) | **기법**: SRM, z-test, Heterogeneous Treatment Effects, Dose-response
 
@@ -23,7 +48,7 @@ CSV 업로드 → Health Check (SRM/스키마) → 통계 분석 (z-test/Bayesia
 
 [Notebook](./notebooks/case-study-marketing-ab-test.ipynb) | [SQL Version](./notebooks/case-study-marketing-sql-analysis.ipynb)
 
-### 2. Cohort Retention — E-commerce 고객 생존 분석
+### 3. Cohort Retention — E-commerce 고객 생존 분석
 
 **데이터**: UCI Online Retail (541K transactions, 4,372 customers) | **기법**: 코호트 리텐션, LTV 추정, 세그먼트 비교
 
@@ -32,7 +57,7 @@ CSV 업로드 → Health Check (SRM/스키마) → 통계 분석 (z-test/Bayesia
 
 [Notebook](./notebooks/case-study-cohort-retention.ipynb)
 
-### 3. Funnel Analysis — 전환 병목 진단
+### 4. Funnel Analysis — 전환 병목 진단
 
 **데이터**: eCommerce Events (Cosmetics Shop) | **기법**: 유저 퍼널, 카테고리별 비교, 가격 민감도
 
@@ -41,7 +66,7 @@ CSV 업로드 → Health Check (SRM/스키마) → 통계 분석 (z-test/Bayesia
 
 [Notebook](./notebooks/case-study-funnel-analysis.ipynb)
 
-### 4. SRM False Positive Detection — 거짓 양성 사례
+### 5. SRM False Positive Detection — 거짓 양성 사례
 
 **데이터**: 시뮬레이션 (봇 트래픽 오염) | **기법**: SRM, 일별 트래픽 분석, 데이터 정제
 
@@ -49,7 +74,7 @@ CSV 업로드 → Health Check (SRM/스키마) → 통계 분석 (z-test/Bayesia
 
 [Notebook](./notebooks/case-study-srm-detection.ipynb)
 
-### 5. Sequential Testing — Monte Carlo 시뮬레이션
+### 6. Sequential Testing — Monte Carlo 시뮬레이션
 
 **데이터**: 60,000회 시뮬레이션 | **기법**: O'Brien-Fleming vs Pocock alpha spending
 
@@ -76,11 +101,11 @@ CSV 업로드 → Health Check (SRM/스키마) → 통계 분석 (z-test/Bayesia
 
 | 항목 | 수치 |
 |------|------|
-| Unit Tests | 209 passing (27 test files) |
+| Unit Tests | 210+ passing (28 test files) |
 | Core Logic | 3,700+ lines Python (scipy/statsmodels) |
 | Frontend | 7,200+ lines TypeScript (React 19) |
 | Decision Regression | 2개 전용 테스트 파일 (절대 깨뜨리지 않음) |
-| Case Studies | 5개 분석 노트북 (실데이터 + 시뮬레이션) |
+| Case Studies | 6개 분석 노트북 (실데이터 + 시뮬레이션) |
 | Design Rationale | [Threshold 선택 근거 (7개 학술 참고문헌)](./docs/design-rationale.md) |
 
 ---
@@ -124,7 +149,7 @@ Primary 비유의                   → Hold
 | Layer | Technology |
 |-------|-----------|
 | **Frontend (Web)** | React 19 + TypeScript 5.8 + Tailwind CSS v4 + Vite 6 + Recharts 3 |
-| **Frontend (Local)** | Streamlit (멀티페이지) |
+| **Frontend (Legacy)** | Streamlit (legacy only, not primary) |
 | **Backend API** | FastAPI + Uvicorn |
 | **Analysis** | pandas, numpy, scipy, statsmodels |
 | **Deploy** | Vercel (frontend) + Render (backend) |
@@ -147,12 +172,14 @@ npm run dev
 브라우저에서 `http://localhost:5173` 접속
 
 <details>
-<summary>Streamlit (로컬 분석용)</summary>
+<summary>Streamlit (Legacy / Optional)</summary>
 
 ```bash
 pip install -r requirements.txt
 streamlit run app.py
 ```
+
+React UI is the primary path for active development and deployment.
 </details>
 
 ---
@@ -186,7 +213,7 @@ treatment,10050,1320,118,33
 </details>
 
 <details>
-<summary>Tests (209 passing)</summary>
+<summary>Tests (210+ passing)</summary>
 
 ```bash
 python -m pytest tests/ -v
@@ -198,6 +225,7 @@ python -m pytest tests/ -v
 | Sequential | `test_sequential.py`, `test_sequential_boundaries.py` | 57 tests |
 | Multi-variant | `test_multivariant_*.py` | 21 tests |
 | Analysis | `test_analysis.py`, `test_multiple_comparisons.py` | 핵심 분석 로직 |
+| API Endpoints | `test_api_endpoints.py` | 7개 핵심 API 테스트 |
 
 </details>
 

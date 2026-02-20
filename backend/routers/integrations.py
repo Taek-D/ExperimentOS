@@ -1,11 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, Header, Path, Query
 from typing import List, Optional, Any
+import pandas as pd
 from pydantic import BaseModel
 
 from src.experimentos.integrations.registry import registry
 from src.experimentos.integrations.base import IntegrationError, ProviderNotFoundError, ProviderAuthError
 from src.experimentos.integrations.transform import to_experiment_df
-from src.experimentos.analysis import calculate_primary, calculate_guardrails
+from src.experimentos.analysis import (
+    calculate_primary,
+    calculate_guardrails,
+    analyze_multivariant,
+    calculate_guardrails_multivariant,
+)
+from src.experimentos.config import MULTIPLE_TESTING_METHOD
 from backend.utils import sanitize
 
 router = APIRouter(
@@ -30,8 +37,16 @@ class AnalysisResponse(BaseModel):
     status: str
     experiment_id: str
     provider: str
+    is_multivariant: Optional[bool] = None
+    variant_count: Optional[int] = None
     primary_result: Any
-    guardrail_results: Optional[List[Any]] = None
+    guardrail_results: Any = None
+
+
+def _is_multivariant(df: pd.DataFrame) -> bool:
+    """Auto-detect whether experiment data should use multi-variant analysis path."""
+    variants = df["variant"].unique()
+    return len(variants) > 2 or "treatment" not in variants
 
 @router.get("/{provider}/experiments", response_model=List[ExperimentResponse])
 async def list_experiments(
@@ -83,29 +98,44 @@ async def analyze_experiment(
         df = to_experiment_df(result)
         
         # 3. Analyze
-        # Run Primary Analysis
-        primary_result = calculate_primary(df)
-        
-        # Run Guardrails Analysis if requested or if metrics exist
-        # transform.py adds metrics as columns. We can auto-detect or use user input.
-        # If user input provided, use that. Else, maybe use all other columns?
-        # For now, let's stick to explicit user request via query param or default to None.
-        guardrail_cols = guardrails.split(",") if guardrails else None
-        
-        # If no explicit guardrails asked, but we have metrics in DF (excluding standard ones),
-        # we could potentially auto-detect. 
-        # Standard cols: variant, users, conversions.
-        extra_cols = [c for c in df.columns if c not in ['variant', 'users', 'conversions']]
+        # If no explicit guardrails asked, auto-detect all extra metric columns.
+        guardrail_cols = [c.strip() for c in guardrails.split(",")] if guardrails else None
+        guardrail_cols = [c for c in guardrail_cols or [] if c]
+        extra_cols = [c for c in df.columns if c not in ["variant", "users", "conversions"]]
         if not guardrail_cols and extra_cols:
-             guardrail_cols = extra_cols
+            guardrail_cols = extra_cols
 
-        guardrail_results = calculate_guardrails(df, guardrail_columns=guardrail_cols)
+        is_multi = _is_multivariant(df)
+        if is_multi:
+            primary_result = analyze_multivariant(df, MULTIPLE_TESTING_METHOD)
+            primary_result["is_multivariant"] = True
+
+            best_variant = None
+            best_lift = -float("inf")
+            for v_name, v_data in primary_result.get("variants", {}).items():
+                if v_data.get("is_significant_corrected") and v_data["absolute_lift"] > best_lift:
+                    best_lift = v_data["absolute_lift"]
+                    best_variant = v_name
+            primary_result["best_variant"] = best_variant
+
+            guardrail_results = calculate_guardrails_multivariant(
+                df,
+                guardrail_columns=guardrail_cols or None,
+            )
+        else:
+            primary_result = calculate_primary(df)
+            guardrail_results = calculate_guardrails(
+                df,
+                guardrail_columns=guardrail_cols or None,
+            )
         
         # Sanitize for JSON response (numpy types)
         return sanitize({
             "status": "success",
             "experiment_id": experiment_id,
             "provider": provider,
+            "is_multivariant": is_multi,
+            "variant_count": len(df["variant"].unique()),
             "primary_result": primary_result,
             "guardrail_results": guardrail_results
         })

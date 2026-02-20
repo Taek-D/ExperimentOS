@@ -3,6 +3,8 @@ from fastapi.testclient import TestClient
 from backend.main import app
 from src.experimentos.integrations.registry import registry
 from src.experimentos.integrations.dummy import DummyProvider
+from src.experimentos.integrations.base import ExperimentSummary
+from src.experimentos.integrations.schema import IntegrationResult, IntegrationVariant
 
 # Register dummy provider for testing ensures it's available
 registry.register("dummy", DummyProvider)
@@ -75,3 +77,58 @@ class TestIntegrationAPI:
         )
         assert response.status_code == 502
         assert "Integration Error" in response.json()["detail"]
+
+    def test_analyze_experiment_multivariant_success(self):
+        """Integration analyze endpoint supports multi-variant experiments."""
+
+        class _MultiVariantProvider:
+            def __init__(self, api_key: str):
+                self.api_key = api_key
+
+            @property
+            def provider_name(self) -> str:
+                return "mv_dummy"
+
+            def list_experiments(self):
+                return [ExperimentSummary(id="exp_mv", name="MV Test", status="running")]
+
+            def fetch_experiment(self, experiment_id: str) -> IntegrationResult:
+                return IntegrationResult(
+                    experiment_id=experiment_id,
+                    variants=[
+                        IntegrationVariant(
+                            name="control",
+                            users=1000,
+                            conversions=100,
+                            metrics={"guardrail_error": 20},
+                        ),
+                        IntegrationVariant(
+                            name="variant_a",
+                            users=980,
+                            conversions=125,
+                            metrics={"guardrail_error": 26},
+                        ),
+                        IntegrationVariant(
+                            name="variant_b",
+                            users=1020,
+                            conversions=118,
+                            metrics={"guardrail_error": 22},
+                        ),
+                    ],
+                )
+
+        registry.register("mv_dummy", _MultiVariantProvider)
+
+        response = client.get(
+            "/api/integrations/mv_dummy/experiments/exp_mv/analyze",
+            headers={"X-Integration-Api-Key": "valid_key"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "success"
+        assert data["is_multivariant"] is True
+        assert data["variant_count"] == 3
+        assert data["primary_result"]["is_multivariant"] is True
+        assert "overall" in data["primary_result"]
+        assert "by_variant" in data["guardrail_results"]
