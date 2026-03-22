@@ -44,18 +44,14 @@ const Sidebar: React.FC<SidebarProps> = ({ onReset }) => {
         </div>
 
         <div className="flex items-center gap-3 px-3 py-3 hover:bg-white/5 rounded-2xl cursor-pointer transition-all duration-300 group border border-transparent hover:border-white/5">
-          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-blue-500 p-0.5 shadow-lg shadow-primary/20">
-            <img
-              className="w-full h-full object-cover rounded-full border border-background-dark"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuC1KpeMh3umuvibNw0RvkX36Nuvpe2dt8yIcjI3eFGi9cPcbhcei4Gxn042qN2U_xliXec7ibNWW1tAL-52mf_N1GN06mE5-n0DWFexdhc7Fm4aRYE17KgK2fZRYsAbA4zoPDGE62W3gxJWwFMaaix06uAlXM6ndIybXHIsnnrr8hhnIxhFeth9hgwXcVNDP3L44qRiAjDlqrNnnJ5Df-PcUPJ3T2zEqDNDYr_-2GrBh5au2AnVeKOV8SmdP9IhPNJVGP8ycIUAB2U"
-              alt="User Avatar"
-            />
+          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center shadow-lg shadow-primary/20">
+            <span className="text-white text-sm font-bold">AC</span>
           </div>
           <div className="flex flex-col">
             <p className="text-white text-sm font-bold group-hover:text-primary transition-colors">Alex Chen</p>
             <p className="text-white/40 text-[11px]">Lead Data Scientist</p>
           </div>
-          <Icon name="settings" className="ml-auto text-white/20 group-hover:text-white group-hover:rotate-45 transition-all duration-500" size={18} />
+          <Icon name="settings" className="ml-auto text-white/35 group-hover:text-white group-hover:rotate-45 transition-all duration-500" size={18} />
         </div>
       </div>
     </aside>
@@ -71,10 +67,10 @@ interface NavItemProps {
 
 const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, onClick }) => {
   return (
-    <a
-      href="#"
-      onClick={(e) => { e.preventDefault(); onClick?.(); }}
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive
+    <button
+      type="button"
+      onClick={onClick}
+      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden ${isActive
         ? 'bg-primary text-app-bg font-bold shadow-lg shadow-primary/20'
         : 'hover:bg-white/5 text-white/60 hover:text-white'
         }`}
@@ -85,11 +81,11 @@ const NavItem: React.FC<NavItemProps> = ({ icon, label, isActive, onClick }) => 
         size={20}
         className={isActive ? 'text-app-bg' : 'text-white/40 group-hover:text-primary transition-colors'}
       />
-      <p className="text-sm z-10">
+      <span className="text-sm z-10">
         {label}
-      </p>
+      </span>
       {isActive && <div className="ml-auto w-1.5 h-1.5 rounded-full bg-app-bg"></div>}
-    </a>
+    </button>
   );
 };
 

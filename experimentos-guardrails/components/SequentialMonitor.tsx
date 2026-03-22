@@ -98,7 +98,7 @@ export default function SequentialMonitor() {
         {lookHistory.length > 0 && (
           <button
             onClick={handleReset}
-            className="px-3 py-1.5 text-xs rounded-lg bg-white/5 hover:bg-white/10 text-white/60 transition-colors"
+            className="btn-ghost text-xs"
           >
             Reset History
           </button>
@@ -106,7 +106,7 @@ export default function SequentialMonitor() {
       </div>
 
       {/* Input Form */}
-      <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-5">
+      <div className="glass-card p-5">
         <h3 className="text-sm font-medium text-white/70 mb-4">Experiment Data</h3>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <InputField label="Control Users" value={controlUsers} onChange={setControlUsers} />
@@ -121,11 +121,11 @@ export default function SequentialMonitor() {
           <InputField label="Current Look" value={currentLook} onChange={setCurrentLook} />
           <InputField label="Max Looks" value={maxLooks} onChange={setMaxLooks} />
           <div>
-            <label className="block text-xs text-white/40 mb-1.5">Boundary Type</label>
+            <label className="section-label mb-1.5 block">Boundary Type</label>
             <select
               value={boundaryType}
               onChange={(e) => setBoundaryType(e.target.value as 'obrien_fleming' | 'pocock')}
-              className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white focus:border-indigo-500 focus:outline-none"
+              className="input-field"
             >
               <option value="obrien_fleming">O&apos;Brien-Fleming</option>
               <option value="pocock">Pocock</option>
@@ -137,7 +137,7 @@ export default function SequentialMonitor() {
           <button
             onClick={handleAnalyze}
             disabled={loading}
-            className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-600/50 rounded-lg text-sm font-medium text-white transition-colors flex items-center gap-2"
+            className="btn-primary flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {loading ? (
               <>
@@ -157,7 +157,7 @@ export default function SequentialMonitor() {
         </div>
 
         {error && (
-          <p className="mt-3 text-sm text-red-400">{error}</p>
+          <p className="mt-3 text-sm text-danger">{error}</p>
         )}
       </div>
 
@@ -165,7 +165,7 @@ export default function SequentialMonitor() {
       {result && seq && progress && (
         <>
           {/* Progress Bar */}
-          <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-5">
+          <div className="glass-card p-5">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm text-white/60">
                 Progress: Look {seq.current_look} / {seq.max_looks}
@@ -180,8 +180,8 @@ export default function SequentialMonitor() {
                 style={{
                   width: `${Math.min(progress.percentage, 100)}%`,
                   backgroundColor: seq.can_stop
-                    ? (seq.decision === 'reject_null' ? '#00e5a0' : '#ff4d6a')
-                    : '#6366f1',
+                    ? (seq.decision === 'reject_null' ? 'var(--color-primary)' : 'var(--color-danger)')
+                    : 'var(--color-primary-dim)',
                 }}
               />
             </div>
@@ -195,7 +195,7 @@ export default function SequentialMonitor() {
           <DecisionCard sequential={seq} />
 
           {/* Boundary Chart */}
-          <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-5">
+          <div className="glass-card p-5">
             <BoundaryChart
               boundaries={result.boundaries}
               currentLook={{
@@ -209,7 +209,7 @@ export default function SequentialMonitor() {
           </div>
 
           {/* Look History Table */}
-          <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-5">
+          <div className="glass-card p-5">
             <h3 className="text-sm font-medium text-white/70 mb-3">Look History</h3>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -229,7 +229,7 @@ export default function SequentialMonitor() {
                     return (
                       <tr
                         key={b.look}
-                        className={`border-b border-white/5 ${isCurrent ? 'bg-indigo-500/10' : ''}`}
+                        className={`border-b border-white/5 ${isCurrent ? 'bg-primary/10' : ''}`}
                       >
                         <td className="py-2 px-3 text-white/80 font-mono">
                           {b.look}{isCurrent ? ' *' : ''}
@@ -239,14 +239,14 @@ export default function SequentialMonitor() {
                         </td>
                         <td className="py-2 px-3 font-mono">
                           {histEntry ? (
-                            <span className={Math.abs(histEntry.z_stat) >= b.z_boundary ? 'text-green-400' : 'text-white/60'}>
+                            <span className={Math.abs(histEntry.z_stat) >= b.z_boundary ? 'text-primary' : 'text-white/60'}>
                               {histEntry.z_stat.toFixed(3)}
                             </span>
                           ) : (
-                            <span className="text-white/20">—</span>
+                            <span className="text-white/35">—</span>
                           )}
                         </td>
-                        <td className="py-2 px-3 text-red-400/60 font-mono">
+                        <td className="py-2 px-3 text-danger/60 font-mono">
                           ±{b.z_boundary.toFixed(3)}
                         </td>
                         <td className="py-2 px-3 text-xs">
@@ -255,7 +255,7 @@ export default function SequentialMonitor() {
                           ) : histEntry ? (
                             <span className="text-white/40">Continued</span>
                           ) : (
-                            <span className="text-white/20">Pending</span>
+                            <span className="text-white/35">Pending</span>
                           )}
                         </td>
                       </tr>
@@ -267,7 +267,7 @@ export default function SequentialMonitor() {
           </div>
 
           {/* Primary Result Summary */}
-          <div className="bg-white/[0.03] rounded-xl border border-white/[0.06] p-5">
+          <div className="glass-card p-5">
             <h3 className="text-sm font-medium text-white/70 mb-3">Primary Metric</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <StatBlock label="Control Rate" value={`${(result.primary_result.control_rate * 100).toFixed(2)}%`} />
@@ -289,23 +289,23 @@ export default function SequentialMonitor() {
 function InputField({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
   return (
     <div>
-      <label className="block text-xs text-white/40 mb-1.5">{label}</label>
+      <label className="section-label mb-1.5 block">{label}</label>
       <input
         type="number"
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white font-mono focus:border-indigo-500 focus:outline-none"
+        className="input-field font-mono"
       />
     </div>
   );
 }
 
 function DecisionCard({ sequential }: { sequential: SequentialResult }) {
-  const defaultStyle = { bg: 'bg-indigo-500/10 border-indigo-500/20', icon: 'hourglass_top', title: 'Continue Collecting Data' };
+  const defaultStyle = { bg: 'bg-info/10 border-info/20', icon: 'hourglass_top', title: 'Continue Collecting Data' };
   const decisionConfig: Record<string, { bg: string; icon: string; title: string }> = {
-    reject_null: { bg: 'bg-green-500/10 border-green-500/20', icon: 'check_circle', title: 'Early Stopping Justified' },
+    reject_null: { bg: 'bg-primary/10 border-primary/20', icon: 'check_circle', title: 'Early Stopping Justified' },
     continue: defaultStyle,
-    fail_to_reject: { bg: 'bg-amber-500/10 border-amber-500/20', icon: 'do_not_disturb', title: 'No Significant Difference' },
+    fail_to_reject: { bg: 'bg-warning/10 border-warning/20', icon: 'do_not_disturb', title: 'No Significant Difference' },
   };
   const c = decisionConfig[sequential.decision] ?? defaultStyle;
 
@@ -326,16 +326,16 @@ function DecisionCard({ sequential }: { sequential: SequentialResult }) {
 }
 
 function StatusBadge({ decision }: { decision: string }) {
-  if (decision === 'reject_null') return <span className="text-green-400 font-medium">Reject H0</span>;
-  if (decision === 'fail_to_reject') return <span className="text-amber-400 font-medium">Fail to Reject</span>;
-  return <span className="text-indigo-400 font-medium">Continue</span>;
+  if (decision === 'reject_null') return <span className="text-primary font-medium">Reject H0</span>;
+  if (decision === 'fail_to_reject') return <span className="text-warning font-medium">Fail to Reject</span>;
+  return <span className="text-info font-medium">Continue</span>;
 }
 
 function StatBlock({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
   return (
     <div>
       <span className="text-xs text-white/40 block">{label}</span>
-      <span className={`text-lg font-mono ${highlight ? 'text-green-400' : 'text-white/80'}`}>
+      <span className={`text-lg font-mono ${highlight ? 'text-primary' : 'text-white/80'}`}>
         {value}
       </span>
     </div>

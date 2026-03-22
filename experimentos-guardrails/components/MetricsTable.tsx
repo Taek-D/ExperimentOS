@@ -125,7 +125,7 @@ const MetricsTable: React.FC<MetricsTableProps> = ({ data }) => {
   return (
     <div className="flex-1 flex flex-col min-h-0" data-tour="metrics-table">
       <div className="flex-1 overflow-auto rounded-xl border border-white/[0.06] bg-surface-0/50 custom-scrollbar">
-        <table className="w-full text-left border-collapse" style={{ minWidth: '640px' }}>
+        <table className="w-full text-left border-collapse min-w-[640px]">
           <thead className="sticky top-0 z-10 bg-surface-1/95 backdrop-blur-md">
             <tr>
               <th className="p-3.5 pl-5 text-white/30 text-[10px] font-mono uppercase tracking-widest font-semibold border-b border-white/[0.06] w-[30%]">Metric Name</th>
@@ -201,7 +201,7 @@ const MetricRow: React.FC<MetricRowProps> = ({ row, showCorrected }) => {
             {isOverall && <span className="text-[9px] font-bold bg-info/15 text-info px-1.5 py-0.5 rounded uppercase tracking-wider">Overall</span>}
             {row.type === 'Variant' && <span className="text-[9px] font-bold bg-white/[0.06] text-white/40 px-1.5 py-0.5 rounded uppercase tracking-wider">Variant</span>}
           </div>
-          <span className="text-white/20 text-[10px] font-mono mt-0.5 group-hover:text-white/35 transition-colors">{row.key}</span>
+          <span className="text-white/35 text-[10px] font-mono mt-0.5 group-hover:text-white/50 transition-colors">{row.key}</span>
         </div>
       </td>
       <td className="p-3.5 text-right font-mono text-sm text-white/40">{row.baseline}</td>

@@ -206,10 +206,10 @@ const App: React.FC = () => {
           <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
             <Icon name="science" className="text-primary" size={18} />
           </div>
-          <span className="text-[15px] font-bold tracking-tight text-white group-hover:text-primary transition-colors">
+          <h1 className="text-[15px] font-bold tracking-tight text-white group-hover:text-primary transition-colors m-0">
             ExperimentOS
-          </span>
-          <span className="hidden sm:inline text-[10px] font-mono text-white/25 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.04]">
+          </h1>
+          <span className="hidden sm:inline text-[10px] font-mono text-white/40 bg-white/[0.04] px-1.5 py-0.5 rounded border border-white/[0.04]">
             v2.4
           </span>
         </div>
@@ -244,6 +244,7 @@ const App: React.FC = () => {
           {hasResults && (
             <button
               onClick={handleReset}
+              aria-label="New experiment"
               className="focus-ring flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm text-white/40 hover:text-white/70 hover:bg-white/[0.04] transition-all"
             >
               <Icon name="restart_alt" size={16} />
@@ -321,7 +322,7 @@ const App: React.FC = () => {
                     <span className="w-full border-t border-white/[0.06]" />
                   </div>
                   <div className="relative flex justify-center">
-                    <span className="bg-app-bg px-3 text-[11px] font-mono uppercase tracking-widest text-white/25">
+                    <span className="bg-app-bg px-3 text-[11px] font-mono uppercase tracking-widest text-white/40">
                       Or upload file
                     </span>
                   </div>
@@ -366,22 +367,30 @@ const App: React.FC = () => {
           /* ── Results State ── */
           <div className="h-full overflow-y-auto custom-scrollbar">
             {currentPage === 'analysis' && (
-              <Dashboard
-                data={analysisResult}
-                health={healthResult}
-                continuousResults={continuousResults}
-                bayesianInsights={bayesianInsights}
-              />
+              <div className="tab-content-enter" key="analysis">
+                <Dashboard
+                  data={analysisResult}
+                  health={healthResult}
+                  continuousResults={continuousResults}
+                  bayesianInsights={bayesianInsights}
+                />
+              </div>
             )}
             {currentPage === 'memo' && (
-              <DecisionMemo
-                experimentName={experimentName}
-                health={healthResult}
-                analysisResult={analysisResult}
-                bayesianInsights={bayesianInsights}
-              />
+              <div className="tab-content-enter" key="memo">
+                <DecisionMemo
+                  experimentName={experimentName}
+                  health={healthResult}
+                  analysisResult={analysisResult}
+                  bayesianInsights={bayesianInsights}
+                />
+              </div>
             )}
-            {currentPage === 'calculator' && <PowerCalculator />}
+            {currentPage === 'calculator' && (
+              <div className="tab-content-enter" key="calculator">
+                <PowerCalculator />
+              </div>
+            )}
           </div>
         )}
       </main>

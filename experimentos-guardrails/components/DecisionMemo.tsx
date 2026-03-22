@@ -1,7 +1,33 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { DecisionMemoResponse, generateDecisionMemo, HealthCheckResult, AnalysisResult } from '../api/client';
 import type { BayesianInsightsUnion } from '../api/client';
 import Icon from './Icon';
+
+/** Strip dangerous tags/attributes from HTML to prevent XSS */
+function sanitizeHTML(html: string): string {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    const dangerousTags = ['script', 'iframe', 'object', 'embed', 'form', 'link', 'style'];
+    const dangerousAttrs = ['onerror', 'onload', 'onclick', 'onmouseover', 'onfocus', 'onblur'];
+
+    for (const tag of dangerousTags) {
+        const els = doc.body.querySelectorAll(tag);
+        els.forEach(el => el.remove());
+    }
+
+    const allEls = doc.body.querySelectorAll('*');
+    allEls.forEach(el => {
+        for (const attr of Array.from(el.attributes)) {
+            if (dangerousAttrs.includes(attr.name.toLowerCase()) || attr.name.startsWith('on')) {
+                el.removeAttribute(attr.name);
+            }
+            if (attr.name === 'href' && attr.value.trim().toLowerCase().startsWith('javascript:')) {
+                el.removeAttribute(attr.name);
+            }
+        }
+    });
+
+    return doc.body.innerHTML;
+}
 
 interface DecisionMemoProps {
     experimentName: string;
@@ -16,6 +42,7 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
     const [error, setError] = useState<string | null>(null);
 
     const resultRef = useRef<HTMLDivElement>(null);
+    const sanitizedHTML = useMemo(() => memo ? sanitizeHTML(memo.memo_html) : '', [memo]);
 
     useEffect(() => {
         if (memo && resultRef.current) {
@@ -175,10 +202,10 @@ export const DecisionMemo: React.FC<DecisionMemoProps> = ({ experimentName, heal
                     <div className="glass-card overflow-hidden">
                         <div className="px-5 py-3.5 border-b border-white/[0.06] flex justify-between items-center">
                             <h4 className="text-sm font-semibold text-white">Memo Preview</h4>
-                            <span className="text-[10px] text-white/25 font-mono">Scroll to see full content</span>
+                            <span className="text-[10px] text-white/40 font-mono">Scroll to see full content</span>
                         </div>
                         <div className="p-6 prose prose-invert prose-sm max-w-none max-h-[800px] overflow-y-auto custom-scrollbar">
-                            <div dangerouslySetInnerHTML={{ __html: memo.memo_html }} />
+                            <div dangerouslySetInnerHTML={{ __html: sanitizedHTML }} />
                         </div>
                     </div>
                 </div>

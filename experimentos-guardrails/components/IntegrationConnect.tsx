@@ -104,7 +104,7 @@ export const IntegrationConnect: React.FC = () => {
                             <p className="font-medium text-sm text-white">
                                 Connected to <span className="text-primary">{getProviderName(savedProvider)}</span>
                             </p>
-                            <p className="text-xs text-white/25 flex items-center gap-1.5 mt-0.5">
+                            <p className="text-xs text-white/40 flex items-center gap-1.5 mt-0.5">
                                 API Key: <span className="font-mono bg-white/[0.04] px-1.5 py-0.5 rounded text-[10px] tracking-widest">&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;&#9679;</span>
                             </p>
                         </div>

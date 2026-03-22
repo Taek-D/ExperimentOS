@@ -229,19 +229,19 @@ export const PowerCalculator: React.FC<PowerCalculatorProps> = ({ onApply }) => 
                             <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.04]">
                                 <div className="text-white/35 text-[11px] font-semibold uppercase tracking-wider mb-1.5">Control</div>
                                 <div className="text-white text-2xl font-bold font-mono">{result.sampleSizePerVariation.toLocaleString()}</div>
-                                <div className="text-white/25 text-xs mt-1 font-mono">users</div>
+                                <div className="text-white/40 text-xs mt-1 font-mono">users</div>
                             </div>
 
                             <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.04]">
                                 <div className="text-white/35 text-[11px] font-semibold uppercase tracking-wider mb-1.5">Treatment</div>
                                 <div className="text-white text-2xl font-bold font-mono">{result.sampleSizePerVariation.toLocaleString()}</div>
-                                <div className="text-white/25 text-xs mt-1 font-mono">users</div>
+                                <div className="text-white/40 text-xs mt-1 font-mono">users</div>
                             </div>
 
                             <div className="bg-white/[0.03] rounded-xl p-4 border border-white/[0.04]">
                                 <div className="text-white/35 text-[11px] font-semibold uppercase tracking-wider mb-1.5">Total Required</div>
                                 <div className="text-white text-2xl font-bold font-mono">{result.totalSampleSize.toLocaleString()}</div>
-                                <div className="text-white/25 text-xs mt-1 font-mono">users</div>
+                                <div className="text-white/40 text-xs mt-1 font-mono">users</div>
                             </div>
                         </div>
 

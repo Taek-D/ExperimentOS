@@ -52,6 +52,7 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
             <input
                 type="file"
                 accept=".csv"
+                aria-label="Upload CSV file"
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
                 onChange={handleFileInput}
                 disabled={isUploading}
@@ -77,7 +78,7 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
                     </p>
                 </div>
 
-                <span className="text-[10px] font-mono text-white/20 bg-white/[0.03] px-2.5 py-1 rounded-full border border-white/[0.04]">
+                <span className="text-[10px] font-mono text-white/40 bg-white/[0.03] px-2.5 py-1 rounded-full border border-white/[0.04]">
                     .csv
                 </span>
             </div>

@@ -169,14 +169,14 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
       {/* Tab content */}
       <div className="pb-12">
         {activeTab === 'primary' && (
-          <div className="space-y-6">
+          <div className="space-y-6 tab-content-enter" key="primary">
             <MetricsTable data={data} />
             {!isMulti && <ForestPlot primary={primary} guardrails={Array.isArray(guardrails) ? guardrails : []} />}
             {isMulti && <ForestPlot primary={primary} guardrails={[]} />}
           </div>
         )}
         {activeTab === 'guardrails' && (
-          <div className="space-y-4">
+          <div className="space-y-4 tab-content-enter" key="guardrails">
             <h3 className="text-lg font-semibold text-white">Guardrail Metrics</h3>
             {isMulti && isMultiVariantGuardrails(guardrails) ? (
               <MultiVariantGuardrailView guardrails={guardrails} />
@@ -199,8 +199,8 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
             )}
           </div>
         )}
-        {activeTab === 'continuous' && <ContinuousMetrics metrics={continuousResults} />}
-        {activeTab === 'bayesian' && <BayesianInsightsComponent insights={bayesianInsights} />}
+        {activeTab === 'continuous' && <div className="tab-content-enter" key="continuous"><ContinuousMetrics metrics={continuousResults} /></div>}
+        {activeTab === 'bayesian' && <div className="tab-content-enter" key="bayesian"><BayesianInsightsComponent insights={bayesianInsights} /></div>}
       </div>
     </div>
   );
