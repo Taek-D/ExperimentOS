@@ -40,11 +40,12 @@ export const FileUpload = ({ onFileSelect, isUploading }: FileUploadProps) => {
     return (
         <div
             data-tour="file-upload"
-            className={`relative w-full rounded-xl border-2 border-dashed transition-all duration-200 ${
+            className={`relative w-full rounded-xl border-2 border-dashed transition-all duration-250 ${
                 isDragging
-                    ? 'border-primary bg-primary/[0.06]'
+                    ? 'border-primary bg-primary/[0.06] shadow-glow-primary scale-[1.01]'
                     : 'border-white/[0.08] bg-surface-1/30 hover:border-primary/30 hover:bg-surface-1/50'
             }`}
+            style={{ transition: 'all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1)' }}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}

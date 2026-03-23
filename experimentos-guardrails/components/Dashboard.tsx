@@ -10,7 +10,7 @@ import {
   isMultiVariantPrimary,
   isMultiVariantGuardrails,
 } from '../api/client';
-import type { BayesianInsightsUnion } from '../api/client';
+import type { BayesianInsightsUnion, MultiVariantGuardrailResults } from '../api/client';
 import { ContinuousMetrics } from './ContinuousMetrics';
 import { BayesianInsightsComponent } from './BayesianInsights';
 
@@ -83,7 +83,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div className="flex flex-col gap-1.5">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Experiment Results</h2>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight gradient-text">Experiment Results</h2>
               <span className="status-badge-positive">
                 Complete
               </span>
@@ -146,7 +146,7 @@ const Dashboard: React.FC<DashboardProps> = ({ data, health, continuousResults =
       </header>
 
       {/* Tab bar */}
-      <div className="flex gap-1.5 border-b border-white/[0.06] pb-px overflow-x-auto" data-tour="dashboard-tabs">
+      <div className="flex gap-1 border-b border-white/[0.06] pb-px overflow-x-auto" data-tour="dashboard-tabs">
         {tabs.map((tab) => (
           <button
             key={tab.id}
@@ -212,7 +212,7 @@ interface GuardrailCardProps {
 }
 
 const GuardrailCard: React.FC<GuardrailCardProps> = ({ g }) => (
-  <div className="glass-card p-5">
+  <div className="glass-card-hover p-5">
     <div className="flex items-center justify-between mb-4">
       <h4 className="text-base font-semibold text-white">{g.name}</h4>
       <span className={g.severe ? 'status-badge-critical' : g.worsened ? 'status-badge-warning' : 'status-badge-positive'}>
@@ -239,8 +239,6 @@ const GuardrailCard: React.FC<GuardrailCardProps> = ({ g }) => (
 );
 
 // Multi-variant guardrail view
-import type { MultiVariantGuardrailResults } from '../api/client';
-
 const VARIANT_COLORS = ['#6366f1', '#34d399', '#f59e0b', '#ec4899', '#06b6d4', '#8b5cf6'];
 
 const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailResults }> = ({ guardrails }) => {
@@ -279,7 +277,7 @@ const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailRes
               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
               <h4 className="text-sm font-semibold text-white uppercase tracking-wide">{vName} vs Control</h4>
             </div>
-            <div className="overflow-auto">
+            <div className="overflow-auto custom-scrollbar">
               <table className="w-full text-left text-sm">
                 <thead>
                   <tr className="text-white/30 text-[10px] font-mono uppercase tracking-widest">
@@ -292,7 +290,7 @@ const MultiVariantGuardrailView: React.FC<{ guardrails: MultiVariantGuardrailRes
                 </thead>
                 <tbody>
                   {entries.map((g, gi) => (
-                    <tr key={gi} className="border-t border-white/[0.04]">
+                    <tr key={gi} className="border-t border-white/[0.04] hover:bg-white/[0.02] transition-colors">
                       <td className="p-2.5 text-white">{g.name}</td>
                       <td className="p-2.5 text-right text-white/40 font-mono">{(g.control_rate * 100).toFixed(2)}%</td>
                       <td className="p-2.5 text-right text-white/80 font-mono">{(g.treatment_rate * 100).toFixed(2)}%</td>

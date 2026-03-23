@@ -12,9 +12,11 @@ import { ExperimentSelector } from './components/ExperimentSelector';
 import TourOverlay from './components/TourOverlay';
 import { useTour } from './hooks/useTour';
 import Icon from './components/Icon';
+import LandingPage from './components/LandingPage';
 import { DEMO_HEALTH_RESULT, DEMO_ANALYSIS_RESULT, DEMO_BAYESIAN_INSIGHTS, DEMO_MULTIVARIANT_HEALTH, DEMO_MULTIVARIANT_ANALYSIS, DEMO_MULTIVARIANT_BAYESIAN } from './data/demoData';
 
 type PageType = 'analysis' | 'memo' | 'calculator' | 'sequential';
+type AppView = 'landing' | 'app';
 
 const NAV_ITEMS: { id: PageType; label: string; icon: string }[] = [
   { id: 'analysis', label: 'Analysis', icon: 'analytics' },
@@ -24,6 +26,7 @@ const NAV_ITEMS: { id: PageType; label: string; icon: string }[] = [
 ];
 
 const App: React.FC = () => {
+  const [appView, setAppView] = useState<AppView>('landing');
   const [currentPage, setCurrentPage] = useState<PageType>('analysis');
   const [experimentName, setExperimentName] = useState('Experiment');
   const [, setSelectedFile] = useState<File | null>(null);
@@ -63,7 +66,6 @@ const App: React.FC = () => {
       const provider = localStorage.getItem('integration_provider');
       if (!provider) return;
 
-      // Auto-sync experiment data from integration provider
       try {
         const result = await analyzeExperiment(provider, activeExperimentId);
         setAnalysisResult(result);
@@ -94,6 +96,7 @@ const App: React.FC = () => {
     setSelectedFile(null);
     setIsAutoSync(false);
     setActiveExperimentId(null);
+    setAppView('app');
   }, []);
 
   const handleLoadMultiVariantDemo = useCallback(() => {
@@ -106,6 +109,7 @@ const App: React.FC = () => {
     setSelectedFile(null);
     setIsAutoSync(false);
     setActiveExperimentId(null);
+    setAppView('app');
   }, []);
 
   const handleTourAction = useCallback((action: string) => {
@@ -196,14 +200,34 @@ const App: React.FC = () => {
     setIsAutoSync(false);
   };
 
+  const handleGoToLanding = () => {
+    handleReset();
+    setAppView('landing');
+  };
+
+  const handleGetStarted = () => {
+    setAppView('app');
+  };
+
   const hasResults = !!analysisResult;
 
+  // ─── Landing Page View ───
+  if (appView === 'landing') {
+    return (
+      <LandingPage
+        onGetStarted={handleGetStarted}
+        onLoadDemo={handleLoadDemo}
+      />
+    );
+  }
+
+  // ─── Main App View ───
   return (
     <div className="h-screen flex flex-col bg-app-bg text-white font-body overflow-hidden">
       {/* Top bar */}
       <header className="flex items-center justify-between h-14 px-5 border-b border-white/[0.06] bg-surface-0/80 backdrop-blur-xl shrink-0 z-30">
-        <div className="flex items-center gap-3 cursor-pointer group" onClick={handleReset}>
-          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center">
+        <div className="flex items-center gap-3 cursor-pointer group" onClick={handleGoToLanding}>
+          <div className="w-8 h-8 rounded-lg bg-primary/15 flex items-center justify-center transition-all group-hover:bg-primary/25 group-hover:shadow-glow-primary">
             <Icon name="science" className="text-primary" size={18} />
           </div>
           <h1 className="text-[15px] font-bold tracking-tight text-white group-hover:text-primary transition-colors m-0">
@@ -222,7 +246,7 @@ const App: React.FC = () => {
                 onClick={() => setCurrentPage(item.id)}
                 className={`focus-ring flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-sm font-medium transition-all ${
                   currentPage === item.id
-                    ? 'bg-primary/15 text-primary'
+                    ? 'bg-primary/15 text-primary shadow-sm shadow-primary/5'
                     : 'text-white/50 hover:text-white/80 hover:bg-white/[0.04]'
                 }`}
               >
@@ -257,14 +281,14 @@ const App: React.FC = () => {
       {/* Main content area */}
       <main className="flex-1 overflow-hidden">
         {currentPage === 'sequential' ? (
-          /* ── Sequential Monitor (standalone) ── */
+          /* Sequential Monitor (standalone) */
           <div className="h-full overflow-y-auto custom-scrollbar">
             <div className="max-w-4xl mx-auto px-5 py-8">
               <SequentialMonitor />
             </div>
           </div>
         ) : !hasResults ? (
-          /* ── Landing / Upload State ── */
+          /* Upload State */
           <div className="h-full overflow-y-auto custom-scrollbar">
             <div className="max-w-2xl mx-auto px-5 py-12 flex flex-col items-center gap-8">
 
@@ -274,7 +298,7 @@ const App: React.FC = () => {
                   <Icon name="science" size={14} />
                   A/B Test Decision Engine
                 </div>
-                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight bg-gradient-to-b from-white to-white/60 bg-clip-text text-transparent">
+                <h1 className="text-3xl sm:text-4xl font-bold tracking-tight gradient-text">
                   New Experiment
                 </h1>
                 <p className="text-white/40 text-sm max-w-md mx-auto leading-relaxed">
@@ -364,7 +388,7 @@ const App: React.FC = () => {
             </div>
           </div>
         ) : (
-          /* ── Results State ── */
+          /* Results State */
           <div className="h-full overflow-y-auto custom-scrollbar">
             {currentPage === 'analysis' && (
               <div className="tab-content-enter" key="analysis">

@@ -5,12 +5,14 @@
   --color-primary: #00e5a0;
   --color-primary-dim: #00c98c;
   --color-primary-glow: rgba(0, 229, 160, 0.15);
+  --color-primary-muted: rgba(0, 229, 160, 0.08);
   --color-background-light: #f6f8f7;
-  --color-background-dark: #0a0f0d;
-  --color-surface-0: #0e1512;
-  --color-surface-1: #121b17;
+  --color-background-dark: #080c0a;
+  --color-surface-0: #0c1310;
+  --color-surface-1: #101a16;
   --color-surface-2: #16231e;
   --color-surface-3: #1c2d26;
+  --color-secondary: #6366f1;
   --color-secondary-dark: #1a2c26;
   --color-border-dark: #243d33;
   --color-border-subtle: rgba(255, 255, 255, 0.06);
@@ -18,7 +20,11 @@
   --color-danger-dim: #e6445e;
   --color-warning: #ffb020;
   --color-info: #38bdf8;
-  --color-app-bg: #0a0f0d;
+  --color-success: #34d399;
+  --color-app-bg: #080c0a;
+  --color-text-primary: #f0fdf6;
+  --color-text-secondary: rgba(255, 255, 255, 0.50);
+  --color-text-tertiary: rgba(255, 255, 255, 0.30);
 
   --font-display: "Inter", system-ui, sans-serif;
   --font-body: "Inter", system-ui, sans-serif;
@@ -33,7 +39,8 @@
   --shadow-glow-red: 0 0 24px -4px rgba(255, 77, 106, 0.25);
   --shadow-glow-primary: 0 0 24px -4px rgba(0, 229, 160, 0.2);
   --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow-elevated: 0 4px 24px rgba(0, 0, 0, 0.4), 0 1px 4px rgba(0, 0, 0, 0.3);
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.5), 0 2px 8px rgba(0, 0, 0, 0.3);
+  --shadow-hero: 0 24px 80px -12px rgba(0, 229, 160, 0.08);
 }
 
 @layer base {
@@ -41,14 +48,13 @@
     @apply bg-app-bg text-white font-body antialiased;
   }
 
-  /* Selection */
   ::selection {
     @apply bg-primary/30 text-white;
   }
 }
 
 @layer components {
-  /* Glass card — layered surface with subtle border */
+  /* ─── Glass cards ─── */
   .glass-card {
     background: linear-gradient(
       135deg,
@@ -71,11 +77,12 @@
     border-radius: 1rem;
     backdrop-filter: blur(12px);
     box-shadow: var(--shadow-card);
-    transition: all 0.2s ease;
+    transition: all 0.25s cubic-bezier(0.25, 0.1, 0.25, 1);
   }
   .glass-card-hover:hover {
     border-color: rgba(255, 255, 255, 0.1);
     box-shadow: var(--shadow-elevated);
+    transform: translateY(-2px);
     background: linear-gradient(
       135deg,
       rgba(255, 255, 255, 0.06) 0%,
@@ -83,7 +90,41 @@
     );
   }
 
-  /* Status badges */
+  /* ─── Feature card for landing ─── */
+  .feature-card {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.04) 0%,
+      rgba(255, 255, 255, 0.01) 100%
+    );
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 1.25rem;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  .feature-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(0, 229, 160, 0.3), transparent);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .feature-card:hover {
+    border-color: rgba(0, 229, 160, 0.15);
+    transform: translateY(-4px);
+    box-shadow: 0 16px 48px -8px rgba(0, 0, 0, 0.5), 0 0 24px -4px rgba(0, 229, 160, 0.06);
+  }
+  .feature-card:hover::before {
+    opacity: 1;
+  }
+
+  /* ─── Status badges ─── */
   .status-badge {
     @apply inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors cursor-default;
   }
@@ -122,7 +163,7 @@
     background: rgba(255, 255, 255, 0.08);
   }
 
-  /* Empty state pattern */
+  /* ─── Empty state ─── */
   .empty-state {
     @apply flex flex-col items-center justify-center py-16 text-center;
   }
@@ -136,7 +177,7 @@
     @apply text-white/30 text-sm max-w-sm;
   }
 
-  /* Skeleton loading shimmer (GPU-accelerated via transform) */
+  /* ─── Skeleton loading ─── */
   .skeleton {
     @apply rounded-lg;
     background: rgba(255, 255, 255, 0.03);
@@ -157,40 +198,66 @@
     will-change: transform;
   }
 
-  /* Tab content fade-in transition */
+  /* ─── Tab content fade ─── */
   .tab-content-enter {
     animation: tab-fade-in 0.2s ease-out;
   }
 
-  /* Focus ring for keyboard navigation */
+  /* ─── Focus ring ─── */
   .focus-ring {
     @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 focus-visible:ring-offset-2 focus-visible:ring-offset-app-bg;
   }
 
-  /* Input field styling */
+  /* ─── Input field ─── */
   .input-field {
     @apply w-full px-4 py-2.5 bg-surface-1 border border-white/8 rounded-xl text-white placeholder:text-white/40
            focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/40 transition-all;
   }
 
-  /* Button base styles */
+  /* ─── Buttons ─── */
   .btn-primary {
     @apply px-5 py-2.5 bg-primary text-surface-0 rounded-xl font-semibold
            hover:bg-primary-dim active:scale-[0.98] transition-all
            shadow-lg shadow-primary/15;
+  }
+  .btn-primary-lg {
+    @apply px-8 py-3.5 bg-primary text-surface-0 rounded-xl font-bold text-base
+           hover:bg-primary-dim active:scale-[0.98] transition-all
+           shadow-lg shadow-primary/20;
   }
   .btn-ghost {
     @apply px-4 py-2 bg-white/5 text-white/70 rounded-xl font-medium
            hover:bg-white/8 hover:text-white transition-all
            border border-white/6;
   }
+  .btn-ghost-lg {
+    @apply px-8 py-3.5 bg-white/5 text-white/70 rounded-xl font-semibold text-base
+           hover:bg-white/8 hover:text-white transition-all
+           border border-white/8;
+  }
 
-  /* Section heading */
+  /* ─── Section heading ─── */
   .section-label {
     @apply text-[10px] font-bold uppercase tracking-[0.15em] text-white/35 font-mono;
   }
+
+  /* ─── Gradient text ─── */
+  .gradient-text {
+    background: linear-gradient(180deg, #f0fdf6 30%, rgba(240, 253, 246, 0.5) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-text-primary {
+    background: linear-gradient(135deg, #00e5a0, #38bdf8);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 }
 
+/* ─── Keyframes ─── */
 @keyframes skeleton-shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }
@@ -201,7 +268,55 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Custom scrollbar for dark backgrounds */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes count-up-line {
+  from { width: 0; }
+  to { width: 100%; }
+}
+
+.animate-fade-in-up {
+  opacity: 0;
+  animation: fade-in-up 0.6s cubic-bezier(0.25, 0.1, 0.25, 1) both;
+}
+.animate-fade-in {
+  opacity: 0;
+  animation: fade-in 0.4s ease both;
+}
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
+
+/* Stagger delays for animated lists */
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.2s; }
+.stagger-3 { animation-delay: 0.3s; }
+.stagger-4 { animation-delay: 0.4s; }
+.stagger-5 { animation-delay: 0.5s; }
+.stagger-6 { animation-delay: 0.6s; }
+
+/* ─── Custom scrollbar ─── */
 .custom-scrollbar {
   scrollbar-width: thin;
   scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
@@ -220,7 +335,7 @@
   background: rgba(255, 255, 255, 0.3);
 }
 
-/* Subtle noise texture overlay — applied via pseudo-element if desired */
+/* ─── Noise texture ─── */
 .noise-bg::before {
   content: "";
   position: absolute;
@@ -232,7 +347,7 @@
   z-index: 0;
 }
 
-/* Pulse dot animation */
+/* ─── Pulse dot ─── */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.4; }
@@ -241,9 +356,30 @@
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
-/* Reduced motion: disable all custom animations */
+/* ─── Grid pattern for hero backgrounds ─── */
+.grid-pattern {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 64px 64px;
+}
+
+/* ─── Radial gradient for hero glow ─── */
+.hero-glow {
+  background: radial-gradient(
+    ellipse 60% 50% at 50% 0%,
+    rgba(0, 229, 160, 0.08) 0%,
+    transparent 70%
+  );
+}
+
+/* ─── Reduced motion ─── */
 @media (prefers-reduced-motion: reduce) {
   .animate-pulse-dot,
+  .animate-float,
+  .animate-glow-pulse,
+  .animate-fade-in-up,
+  .animate-fade-in,
   .skeleton,
   .animate-spin,
   .animate-pulse {
